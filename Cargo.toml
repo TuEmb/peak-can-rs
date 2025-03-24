@@ -1,0 +1,11 @@
+[package]
+name = "peak-can"
+version = "0.1.0"
+edition = "2024"
+authors = ["Tu Nguyen <nvtu96@gmail.com>"]
+readme = "README.md"
+repository = "https://github.com/TuEmb/peak-can-rs"
+license       = "MIT OR Apache-2.0"
+
+[dependencies]
+peak-can-sys = "0.1.1"
