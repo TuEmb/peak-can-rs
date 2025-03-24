@@ -1,5 +1,6 @@
 [package]
 name = "peak-can"
+description = "Rust bindings APIs for PEAK-System Technik GmbH"
 version = "0.1.0"
 edition = "2024"
 authors = ["Tu Nguyen <nvtu96@gmail.com>"]
