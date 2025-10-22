@@ -13,6 +13,8 @@ use crate::bus::Bus;
 use crate::error::{CanError, CanOkError};
 use crate::peak_can;
 
+use std::ops::Deref;
+
 pub const STANDARD_MASK: u32 = 0x07_FF;
 pub const EXTENDED_MASK: u32 = 0x1F_FF_FF_FF;
 
@@ -236,6 +238,14 @@ impl PartialEq for CanFdFrame {
 #[derive(Debug, Copy, Clone)]
 pub struct Timestamp {
     timestamp: peak_can::CANTPTimestamp,
+}
+
+impl Deref for Timestamp {
+    type Target = peak_can::CANTPTimestamp;
+    
+    fn deref(&self) -> &Self::Target {
+        &self.timestamp
+    }
 }
 
 impl Default for Timestamp {
