@@ -18,6 +18,10 @@ fn main() {
             Ok((frame, timestamp)) => {
                 println!("{:?}", frame);
                 println!("{:?}", timestamp);
+                println!("Timestamp - millis: {}, micros: {}", 
+                         timestamp.millis, 
+                         timestamp.micros,
+                        );
             }
             Err(_) => {}
         }
