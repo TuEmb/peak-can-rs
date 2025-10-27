@@ -3,6 +3,9 @@
 //! [CanError] models failure codes only whereas [CanOkError] also models the possibility of
 //! success stated by the [Ok](CanOkError::Ok) variant.
 
+use core::fmt;
+use std::error::Error;
+
 use crate::peak_can;
 
 ///
@@ -169,3 +172,42 @@ impl TryFrom<u32> for CanOkError {
         }
     }
 }
+
+impl fmt::Display for CanError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                CanError::XmtFull => "xmt full",
+                CanError::Overrun => "overrun",
+                CanError::BusLight => "bus light",
+                CanError::BusHeavy => "bus heavy",
+                CanError::BusPassive => "bus passive",
+                CanError::BusOff => "bus off",
+                CanError::AnyBusErr => "any bus error",
+                CanError::QrcvEmpty => "qrcv empty",
+                CanError::QOverrun => "q overrun",
+                CanError::QxmtFull => "qxmt full",
+                CanError::RegTest => "reg test",
+                CanError::NoDriver => "no driver",
+                CanError::HwInUse => "hardware in use",
+                CanError::NetInUse => "network in use",
+                CanError::IllHw => "illegal hardware",
+                CanError::IllNet => "illegal network",
+                CanError::IllClient => "illegal client",
+                CanError::Resource => "resource",
+                CanError::IllParamType => "illegal parameter type",
+                CanError::IllParamVal => "illegal parameter value",
+                CanError::Unknown => "unknown",
+                CanError::IllData => "illegal data",
+                CanError::IllMode => "illegal mode",
+                CanError::Caution => "caution",
+                CanError::Initialize => "initialize",
+                CanError::IllOperation => "illegal operation",
+            }
+        )
+    }
+}
+
+impl Error for CanError {}
