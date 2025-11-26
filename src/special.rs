@@ -4,6 +4,7 @@
 
 use crate::channel::Channel;
 use crate::error::{CanError, CanOkError};
+use crate::peak_lib;
 use crate::peak_can;
 use std::ffi::c_void;
 
@@ -19,7 +20,7 @@ impl<T: HasFiveVoltsPower + Channel> FiveVoltsPower for T {
     fn five_volts(&self) -> Result<bool, CanError> {
         let mut data = [0u8; 4];
         let code = unsafe {
-            peak_can::CAN_GetValue(
+            peak_lib()?.CAN_GetValue(
                 self.channel(),
                 peak_can::PEAK_5VOLTS_POWER as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -55,7 +56,7 @@ impl<T: HasSetFiveVoltsPower + Channel> SetFiveVoltsPower for T {
             false => peak_can::PEAK_PARAMETER_OFF.to_le_bytes(),
         };
         let code = unsafe {
-            peak_can::CAN_SetValue(
+            peak_lib()?.CAN_SetValue(
                 self.channel(),
                 peak_can::PEAK_5VOLTS_POWER as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -83,7 +84,7 @@ impl<T: HasBusOffAutoreset + Channel> BusOffAutoreset for T {
     fn bus_off_autoreset(&self) -> Result<bool, CanError> {
         let mut data = [0u8; 4];
         let code = unsafe {
-            peak_can::CAN_GetValue(
+            peak_lib()?.CAN_GetValue(
                 self.channel(),
                 peak_can::PEAK_BUSOFF_AUTORESET as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -119,7 +120,7 @@ impl<T: HasSetBusOffAutoreset + Channel> SetBusOffAutoreset for T {
             false => peak_can::PEAK_PARAMETER_OFF.to_le_bytes(),
         };
         let code = unsafe {
-            peak_can::CAN_SetValue(
+            peak_lib()?.CAN_SetValue(
                 self.channel(),
                 peak_can::PEAK_BUSOFF_AUTORESET as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -147,7 +148,7 @@ impl<T: HasListenOnly + Channel> ListenOnly for T {
     fn listen_only(&self) -> Result<bool, CanError> {
         let mut data = [0u8; 4];
         let code = unsafe {
-            peak_can::CAN_GetValue(
+            peak_lib()?.CAN_GetValue(
                 self.channel(),
                 peak_can::PEAK_LISTEN_ONLY as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -183,7 +184,7 @@ impl<T: HasSetListenOnly + Channel> SetListenOnly for T {
             false => peak_can::PEAK_PARAMETER_OFF.to_le_bytes(),
         };
         let code = unsafe {
-            peak_can::CAN_SetValue(
+            peak_lib()?.CAN_SetValue(
                 self.channel(),
                 peak_can::PEAK_LISTEN_ONLY as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -211,7 +212,7 @@ impl<T: HasBitrateAdapting + Channel> BitrateAdapting for T {
     fn bitrate_adapting(&self) -> Result<bool, CanError> {
         let mut data = [0u8; 4];
         let code = unsafe {
-            peak_can::CAN_GetValue(
+            peak_lib()?.CAN_GetValue(
                 self.channel(),
                 peak_can::PEAK_BITRATE_ADAPTING as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -247,7 +248,7 @@ impl<T: HasSetBitrateAdapting + Channel> SetBitrateAdapting for T {
             false => peak_can::PEAK_PARAMETER_OFF.to_le_bytes(),
         };
         let code = unsafe {
-            peak_can::CAN_SetValue(
+            peak_lib()?.CAN_SetValue(
                 self.channel(),
                 peak_can::PEAK_BITRATE_ADAPTING as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -275,7 +276,7 @@ impl<T: HasInterframeDelay + Channel> InterframeDelay for T {
     fn interframe_delay(&self) -> Result<u32, CanError> {
         let mut data = [0u8; 4];
         let code = unsafe {
-            peak_can::CAN_GetValue(
+            peak_lib()?.CAN_GetValue(
                 self.channel(),
                 peak_can::PEAK_INTERFRAME_DELAY as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -301,7 +302,7 @@ impl<T: HasSetInterframeDelay + Channel> SetInterframeDelay for T {
     fn set_interframe_delay(&self, value: u32) -> Result<(), CanError> {
         let mut data = value.to_le_bytes();
         let code = unsafe {
-            peak_can::CAN_SetValue(
+            peak_lib()?.CAN_SetValue(
                 self.channel(),
                 peak_can::PEAK_INTERFRAME_DELAY as u8,
                 data.as_mut_ptr() as *mut c_void,

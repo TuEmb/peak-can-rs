@@ -18,8 +18,8 @@ use crate::info::{
     HasBitrateInfo, HasChannelFeatures, HasChannelVersion, HasDataBusSpeed, HasFirmwareVersion,
     HasNominalBusSpeed,
 };
-use crate::peak_can;
-use crate::socket::{Baudrate, HasRecvCan, HasRecvCanFd, HasSendCan, HasSendCanFd, Socket};
+use crate::peak_lib;
+use crate::socket::{Baudrate, HasRecvCan, HasSendCan, Socket};
 use crate::special::{HasFiveVoltsPower, HasSetFiveVoltsPower};
 use crate::trace::{
     HasSetTraceConfigure, HasSetTraceLocation, HasSetTraceSize, HasSetTraceStatus,
@@ -34,7 +34,7 @@ pub struct PccCanSocket {
 impl PccCanSocket {
     pub fn open(bus: PccBus, baud: Baudrate) -> Result<PccCanSocket, CanError> {
         let handle = bus.into();
-        let code = unsafe { peak_can::CAN_Initialize(handle, baud.into(), 0, 0, 0) };
+        let code = unsafe { peak_lib()?.CAN_Initialize(handle, baud.into(), 0, 0, 0) };
 
         match CanOkError::try_from(code) {
             Ok(CanOkError::Ok) => Ok(PccCanSocket { handle }),
@@ -48,7 +48,10 @@ impl PccCanSocket {
 
 impl Drop for PccCanSocket {
     fn drop(&mut self) {
-        unsafe { peak_can::CAN_Uninitialize(self.handle) };
+        let Ok(peak_lib) = peak_lib() else {
+            return;
+        };
+        unsafe { peak_lib.CAN_Uninitialize(self.handle) };
     }
 }
 
