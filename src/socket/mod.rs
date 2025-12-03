@@ -82,6 +82,14 @@ impl CanFrame {
         self.frame.MSGTYPE & peak_can::PEAK_MESSAGE_EXTENDED as u8 != 0
     }
 
+    pub fn is_error_frame(&self) -> bool {
+        self.frame.MSGTYPE & peak_can::PEAK_MESSAGE_ERRFRAME as u8 != 0
+    }
+
+    pub fn is_echo_frame(&self) -> bool {
+        self.frame.MSGTYPE & peak_can::PEAK_MESSAGE_ECHO as u8 != 0
+    }
+
     pub fn can_id(&self) -> u32 {
         if self.is_standard_frame() {
             self.frame.ID & STANDARD_MASK
@@ -138,17 +146,19 @@ pub struct CanFdFrame {
 }
 
 impl CanFdFrame {
-    const MAX_DLC: usize = 64;
+    const MAX_DATA_LENGTH: usize = 64;
 
     pub fn new(
         can_id: u32,
         msg_type: MessageType,
         data: &[u8],
+        fd: bool,
+        brs: bool,
     ) -> Result<CanFdFrame, FrameConstructionError> {
-        if data.len() > Self::MAX_DLC {
+        if data.len() > Self::MAX_DATA_LENGTH {
             Err(FrameConstructionError::TooMuchData)
         } else {
-            let mut frame_data: [u8; 64] = [0; 64];
+            let mut frame_data: [u8; Self::MAX_DATA_LENGTH] = [0; Self::MAX_DATA_LENGTH];
             for (i, v) in data.into_iter().enumerate() {
                 frame_data[i] = *v;
             }
@@ -157,16 +167,20 @@ impl CanFdFrame {
                 MessageType::Standard => Ok(CanFdFrame {
                     frame: peak_can::TPEAKMsgFD {
                         ID: can_id & STANDARD_MASK,
-                        MSGTYPE: peak_can::PEAK_MESSAGE_STANDARD as u8,
-                        DLC: data.len() as u8,
+                        MSGTYPE: peak_can::PEAK_MESSAGE_STANDARD as u8 | 
+                            if fd { peak_can::PEAK_MESSAGE_FD as u8 } else { 0 } |
+                            if brs { peak_can::PEAK_MESSAGE_BRS as u8 } else { 0 },
+                        DLC: Self::calc_dlc(data.len()),
                         DATA: frame_data,
                     },
                 }),
                 MessageType::Extended => Ok(CanFdFrame {
                     frame: peak_can::TPEAKMsgFD {
                         ID: can_id & EXTENDED_MASK,
-                        MSGTYPE: peak_can::PEAK_MESSAGE_EXTENDED as u8,
-                        DLC: data.len() as u8,
+                        MSGTYPE: peak_can::PEAK_MESSAGE_EXTENDED as u8 |
+                            if fd { peak_can::PEAK_MESSAGE_FD as u8 } else { 0 } |
+                            if brs { peak_can::PEAK_MESSAGE_BRS as u8 } else { 0 },
+                        DLC: Self::calc_dlc(data.len()),
                         DATA: frame_data,
                     },
                 }),
@@ -185,6 +199,18 @@ impl CanFdFrame {
             false
         }
     }
+    
+    pub fn is_error_frame(&self) -> bool {
+        self.frame.MSGTYPE & peak_can::PEAK_MESSAGE_ERRFRAME as u8 != 0
+    }
+
+    pub fn is_echo_frame(&self) -> bool {
+        self.frame.MSGTYPE & peak_can::PEAK_MESSAGE_ECHO as u8 != 0
+    }
+
+    pub fn is_fd_frame(&self) -> bool {
+        self.frame.MSGTYPE & peak_can::PEAK_MESSAGE_FD as u8 != 0
+    }
 
     pub fn can_id(&self) -> u32 {
         if self.is_standard_frame() {
@@ -199,18 +225,46 @@ impl CanFdFrame {
     }
 
     pub fn data(&self) -> &[u8] {
-        &self.frame.DATA[0..self.dlc() as usize]
+        &self.frame.DATA[0..self.len() as usize]
     }
 
     pub fn mut_data(&mut self) -> &mut [u8] {
-        let dlc = self.dlc();
-        &mut self.frame.DATA[0..dlc as usize]
+        let len = self.len();
+        &mut self.frame.DATA[0..len as usize]
+    }
+
+    fn calc_dlc(len: usize) -> u8 {
+        match len {
+            0..=8 => len as u8,
+            9..=12 => 9,
+            13..=16 => 10,
+            17..=20 => 11,
+            21..=24 => 12,
+            25..=32 => 13,
+            33..=48 => 14,
+            49..=64 => 15,
+            _ => 15, // Max DLC for CAN FD is 64 bytes
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        match self.dlc() {
+            0..=8 => self.dlc() as usize,
+            9 => 12,
+            10 => 16,
+            11 => 20,
+            12 => 24,
+            13 => 32,
+            14 => 48,
+            15 => 64,
+            _ => 64, // Max DLC for CAN FD is 64 bytes
+        }
     }
 }
 
 impl Default for CanFdFrame {
     fn default() -> Self {
-        CanFdFrame::new(0, MessageType::Standard, &[]).unwrap()
+        CanFdFrame::new(0, MessageType::Standard, &[], false, false).unwrap()
     }
 }
 
@@ -366,6 +420,190 @@ impl From<Baudrate> for u16 {
             Baudrate::Baud5K => peak_can::PEAK_BAUD_5K,
         } as u16;
         ret
+    }
+}
+
+pub struct TimingBoundaries {
+    pub prescaler_min: u16,
+    pub prescaler_max: u16,
+    pub sjw_min: u8,
+    pub sjw_max: u8,
+    pub tseg1_min: u8,
+    pub tseg1_max: u8,
+    pub tseg2_min: u8,
+    pub tseg2_max: u8,
+}
+
+pub struct FdTimingBoundaries {
+    pub nom_prescaler_min: u16,
+    pub nom_prescaler_max: u16,
+    pub nom_sjw_min: u8,
+    pub nom_sjw_max: u8,
+    pub nom_tseg1_min: u16,
+    pub nom_tseg1_max: u16,
+    pub nom_tseg2_min: u8,
+    pub nom_tseg2_max: u8,
+    pub data_prescaler_min: u16,
+    pub data_prescaler_max: u16,
+    pub data_sjw_min: u8,
+    pub data_sjw_max: u8,
+    pub data_tseg1_min: u8,
+    pub data_tseg1_max: u8,
+    pub data_tseg2_min: u8,
+    pub data_tseg2_max: u8,
+}
+
+pub const CAN_TIMING_BOUNDARIES: TimingBoundaries = TimingBoundaries {
+    prescaler_min: 1,
+    prescaler_max: 64,
+    sjw_min: 1,
+    sjw_max: 4,
+    tseg1_min: 1,
+    tseg1_max: 16,
+    tseg2_min: 1,
+    tseg2_max: 8,
+};
+
+pub const CANFD_TIMING_BOUNDARIES: FdTimingBoundaries = FdTimingBoundaries {
+    nom_prescaler_min: 1,
+    nom_prescaler_max: 1024,
+    nom_sjw_min: 1,
+    nom_sjw_max: 128,
+    nom_tseg1_min: 1,
+    nom_tseg1_max: 256,
+    nom_tseg2_min: 1,
+    nom_tseg2_max: 128,
+    data_prescaler_min: 1,
+    data_prescaler_max: 1024,
+    data_sjw_min: 1,
+    data_sjw_max: 16,
+    data_tseg1_min: 1,
+    data_tseg1_max: 32,
+    data_tseg2_min: 1,
+    data_tseg2_max: 16,
+};
+
+pub struct CanBitTiming {
+    pub prescaler: u16,
+    pub sjw: u8,
+    pub tseg1: u8,
+    pub tseg2: u8,
+}
+
+impl CanBitTiming {
+    pub fn new(prescaler: u16, sjw: u8, tseg1: u8, tseg2: u8) -> Result<Self, Box<dyn std::error::Error>> {
+        let timing = CanBitTiming {
+            prescaler,
+            sjw,
+            tseg1,
+            tseg2,
+        };
+
+        if Self::validate(&timing) {
+            Ok(timing)
+        } else {
+            Err("Timing parameters are out of bounds".into())
+        }
+    }
+
+    fn validate(timing: &CanBitTiming) -> bool {
+        if timing.prescaler < CAN_TIMING_BOUNDARIES.prescaler_min
+            || timing.prescaler > CAN_TIMING_BOUNDARIES.prescaler_max
+        {
+            return false;
+        }
+        if timing.sjw < CAN_TIMING_BOUNDARIES.sjw_min
+            || timing.sjw > CAN_TIMING_BOUNDARIES.sjw_max
+        {
+            return false;
+        }
+        if timing.tseg1 < CAN_TIMING_BOUNDARIES.tseg1_min
+            || timing.tseg1 > CAN_TIMING_BOUNDARIES.tseg1_max
+        {
+            return false;
+        }
+        if timing.tseg2 < CAN_TIMING_BOUNDARIES.tseg2_min
+            || timing.tseg2 > CAN_TIMING_BOUNDARIES.tseg2_max
+        {
+            return false;
+        }
+        true
+    }
+}
+
+pub struct CanFdBitTiming {
+    pub nom_prescaler: u16,
+    pub nom_sjw: u8,
+    pub nom_tseg1: u16,
+    pub nom_tseg2: u8,
+    pub data_prescaler: u16,
+    pub data_sjw: u8,
+    pub data_tseg1: u8,
+    pub data_tseg2: u8,
+}
+
+impl CanFdBitTiming {
+    pub fn new(nom_prescaler: u16, nom_sjw: u8, nom_tseg1: u16, nom_tseg2: u8, data_prescaler: u16, data_sjw: u8, data_tseg1: u8, data_tseg2: u8) -> Result<Self, Box<dyn std::error::Error>> {
+        let timing = CanFdBitTiming {
+            nom_prescaler,
+            nom_sjw,
+            nom_tseg1,
+            nom_tseg2,
+            data_prescaler,
+            data_sjw,
+            data_tseg1,
+            data_tseg2,
+        };
+
+        if Self::validate(&timing) {
+            Ok(timing)
+        } else {
+            Err("Timing parameters are out of bounds".into())
+        }
+    }
+
+    fn validate(timing: &CanFdBitTiming) -> bool {
+        if timing.nom_prescaler < CANFD_TIMING_BOUNDARIES.nom_prescaler_min
+            || timing.nom_prescaler > CANFD_TIMING_BOUNDARIES.nom_prescaler_max
+        {
+            return false;
+        }
+        if timing.nom_sjw < CANFD_TIMING_BOUNDARIES.nom_sjw_min
+            || timing.nom_sjw > CANFD_TIMING_BOUNDARIES.nom_sjw_max
+        {
+            return false;
+        }
+        if timing.nom_tseg1 < CANFD_TIMING_BOUNDARIES.nom_tseg1_min
+            || timing.nom_tseg1 > CANFD_TIMING_BOUNDARIES.nom_tseg1_max
+        {
+            return false;
+        }
+        if timing.nom_tseg2 < CANFD_TIMING_BOUNDARIES.nom_tseg2_min
+            || timing.nom_tseg2 > CANFD_TIMING_BOUNDARIES.nom_tseg2_max
+        {
+            return false;
+        }
+        if timing.data_prescaler < CANFD_TIMING_BOUNDARIES.data_prescaler_min
+            || timing.data_prescaler > CANFD_TIMING_BOUNDARIES.data_prescaler_max
+        {
+            return false;
+        }
+        if timing.data_sjw < CANFD_TIMING_BOUNDARIES.data_sjw_min
+            || timing.data_sjw > CANFD_TIMING_BOUNDARIES.data_sjw_max
+        {
+            return false;
+        }
+        if timing.data_tseg1 < CANFD_TIMING_BOUNDARIES.data_tseg1_min
+            || timing.data_tseg1 > CANFD_TIMING_BOUNDARIES.data_tseg1_max
+        {
+            return false;
+        }
+        if timing.data_tseg2 < CANFD_TIMING_BOUNDARIES.data_tseg2_min
+            || timing.data_tseg2 > CANFD_TIMING_BOUNDARIES.data_tseg2_max
+        {
+            return false;
+        }
+        true
     }
 }
 
@@ -552,10 +790,10 @@ mod tests {
     #[test]
     fn can_fd_frame_new_001() {
         let can_frame_1 =
-            CanFdFrame::new(0x20, MessageType::Standard, &(0..64u8).collect::<Vec<_>>()).unwrap();
+            CanFdFrame::new(0x20, MessageType::Standard, &(0..64u8).collect::<Vec<_>>(), false, false).unwrap();
 
         let can_frame_2 =
-            CanFdFrame::new(0x20, MessageType::Standard, &(0..64u8).collect::<Vec<_>>()).unwrap();
+            CanFdFrame::new(0x20, MessageType::Standard, &(0..64u8).collect::<Vec<_>>(), false, false).unwrap();
 
         assert_eq!(can_frame_1, can_frame_2);
     }
@@ -563,10 +801,10 @@ mod tests {
     #[test]
     fn can_fd_frame_new_002() {
         let can_frame_1 =
-            CanFdFrame::new(0x20, MessageType::Extended, &(0..64u8).collect::<Vec<_>>()).unwrap();
+            CanFdFrame::new(0x20, MessageType::Extended, &(0..64u8).collect::<Vec<_>>(), false, false).unwrap();
 
         let can_frame_2 =
-            CanFdFrame::new(0x20, MessageType::Extended, &(0..64u8).collect::<Vec<_>>()).unwrap();
+            CanFdFrame::new(0x20, MessageType::Extended, &(0..64u8).collect::<Vec<_>>(), false, false).unwrap();
 
         assert_eq!(can_frame_1, can_frame_2);
     }
@@ -575,14 +813,14 @@ mod tests {
     #[should_panic]
     fn can_fd_frame_new_003() {
         let _can_frame_1 =
-            CanFdFrame::new(0x20, MessageType::Standard, &(0..65u8).collect::<Vec<_>>()).unwrap();
+            CanFdFrame::new(0x20, MessageType::Standard, &(0..65u8).collect::<Vec<_>>(), false, false).unwrap();
     }
 
     #[test]
     #[should_panic]
     fn can_fd_frame_new_004() {
         let _can_frame_1 =
-            CanFrame::new(0x20, MessageType::Extended, &(0..65u8).collect::<Vec<_>>()).unwrap();
+            CanFdFrame::new(0x20, MessageType::Extended, &(0..65u8).collect::<Vec<_>>(), false, false).unwrap();
     }
 
     #[test]
@@ -595,6 +833,8 @@ mod tests {
             extended_id,
             MessageType::Standard,
             &(0..64u8).collect::<Vec<_>>(),
+            false,
+            false,
         )
         .unwrap();
         assert_eq!(can_frame_1.can_id(), standard_id);
@@ -603,6 +843,8 @@ mod tests {
             extended_id,
             MessageType::Extended,
             &(0..64u8).collect::<Vec<_>>(),
+            false,
+            false,
         )
         .unwrap();
 

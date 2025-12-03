@@ -2,6 +2,8 @@
 //!
 //!
 
+use std::ffi::CString;
+
 use crate::bus::UsbBus;
 use crate::channel::Channel;
 use crate::df::{
@@ -25,7 +27,7 @@ use crate::io::{
     HasSetDigitalConfiguration, HasSetDigitalSet, HasSetDigitalValue,
 };
 use crate::peak_lib;
-use crate::socket::{Baudrate, HasRecvCan, HasSendCan, Socket};
+use crate::socket::{Baudrate, CanBitTiming, CanFdBitTiming, HasRecvCan, HasRecvCanFd, HasSendCan, HasSendCanFd, Socket};
 use crate::special::{
     HasBusOffAutoreset, HasFiveVoltsPower, HasInterframeDelay, HasListenOnly,
     HasSetBusOffAutoreset, HasSetFiveVoltsPower, HasSetInterframeDelay, HasSetListenOnly,
@@ -55,6 +57,47 @@ impl UsbCanSocket {
     pub fn open_with_usb_bus(bus: UsbBus) -> UsbCanSocket {
         let handle = bus.into();
         UsbCanSocket { handle }
+    }
+
+    pub fn open_with_timing(bus: UsbBus, timing: &CanBitTiming) -> Result<UsbCanSocket, CanError> {
+        let handle = bus.into();
+        let btr0btr1 = ((((timing.tseg2 - 1) & 0x07) as u16) << 4)
+            | (((timing.tseg1 - 1) & 0x0F) as u16)
+            | ((((timing.prescaler - 1) & 0x3F) as u16) << 8)
+            | ((((timing.sjw - 1) & 0x03) as u16) << 14);
+        let code = unsafe { peak_lib()?.CAN_Initialize(handle, btr0btr1, 0, 0, 0) };
+
+        match CanOkError::try_from(code) {
+            Ok(CanOkError::Ok) => Ok(UsbCanSocket { handle }),
+            Ok(CanOkError::Err(err)) => Err(err),
+            Err(_) => Err(CanError::Unknown),
+        }
+    }
+
+    pub fn open_fd_with_timing(bus: UsbBus, timing: &CanFdBitTiming) -> Result<UsbCanSocket, CanError> {
+        let handle = bus.into();
+        let timing = format!("f_clock=80000000,nom_brp={},nom_tseg1={},nom_tseg2={},nom_sjw={},data_brp={},data_tseg1={},data_tseg2={},data_sjw={}",
+            timing.nom_prescaler,
+            timing.nom_tseg1,
+            timing.nom_tseg2,
+            timing.nom_sjw,
+            timing.data_prescaler,
+            timing.data_tseg1,
+            timing.data_tseg2,
+            timing.data_sjw,
+        );
+
+        let mut timing_bytes = CString::new(timing)
+            .map_err(|_| CanError::Unknown)?
+            .into_bytes_with_nul();
+
+        let code = unsafe { peak_lib()?.CAN_InitializeFD(handle, timing_bytes.as_mut_ptr().cast()) };
+
+        match CanOkError::try_from(code) {
+            Ok(CanOkError::Ok) => Ok(UsbCanSocket { handle }),
+            Ok(CanOkError::Err(err)) => Err(err),
+            Err(_) => Err(CanError::Unknown),
+        }
     }
 }
 
@@ -90,8 +133,8 @@ impl Channel for UsbCanSocket {
 impl HasRecvCan for UsbCanSocket {}
 impl HasSendCan for UsbCanSocket {}
 
-// impl HasRecvCanFd for UsbCanSocket {}
-// impl HasSendCanFd for UsbCanSocket {}
+impl HasRecvCanFd for UsbCanSocket {}
+impl HasSendCanFd for UsbCanSocket {}
 
 /* HARDWARE IDENTIFICATION */
 
