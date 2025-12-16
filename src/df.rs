@@ -390,7 +390,7 @@ impl<T: HasAllowEchoFrames + Channel> AllowEchoFrames for T {
         let code = unsafe {
             peak_lib()?.CAN_GetValue(
                 self.channel(),
-                peak_can::PEAK_ALLOW_ERROR_FRAMES as u8,
+                peak_can::PEAK_ALLOW_ECHO_FRAMES as u8,
                 data.as_mut_ptr() as *mut c_void,
                 data.len() as u32,
             )
@@ -428,7 +428,7 @@ impl<T: HasSetAllowEchoFrames + Channel> SetAllowEchoFrames for T {
         let code = unsafe {
             peak_lib()?.CAN_SetValue(
                 self.channel(),
-                peak_can::PEAK_ALLOW_ERROR_FRAMES as u8,
+                peak_can::PEAK_ALLOW_ECHO_FRAMES as u8,
                 data.as_mut_ptr() as *mut c_void,
                 data.len() as u32,
             )
