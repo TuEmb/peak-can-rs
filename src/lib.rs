@@ -19,7 +19,7 @@ use peak_can_sys as peak_can;
 use std::sync::LazyLock;
 
 static PEAK_BASIC: LazyLock<Result<peak_can::Pcan, crate::error::CanError>> = LazyLock::new(|| {
-    let filename = libloading::library_filename("PEAKBasic");
+    let filename = libloading::library_filename("PCANBasic");
     Ok(unsafe { peak_can::Pcan::new(filename) }?)
 });
 
