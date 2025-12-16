@@ -24,8 +24,8 @@ use crate::io::{
     HasAnalogValue, HasDigitalConfiguration, HasDigitalValue, HasSetDigitalClear,
     HasSetDigitalConfiguration, HasSetDigitalSet, HasSetDigitalValue,
 };
-use crate::peak_can;
-use crate::socket::{Baudrate, HasRecvCan, HasRecvCanFd, HasSendCan, HasSendCanFd, Socket};
+use crate::peak_lib;
+use crate::socket::{Baudrate, HasRecvCan, HasSendCan, Socket};
 use crate::special::{
     HasBusOffAutoreset, HasFiveVoltsPower, HasInterframeDelay, HasListenOnly,
     HasSetBusOffAutoreset, HasSetFiveVoltsPower, HasSetInterframeDelay, HasSetListenOnly,
@@ -43,7 +43,7 @@ pub struct UsbCanSocket {
 impl UsbCanSocket {
     pub fn open(bus: UsbBus, baud: Baudrate) -> Result<UsbCanSocket, CanError> {
         let handle = bus.into();
-        let code = unsafe { peak_can::CAN_Initialize(handle, baud.into(), 0, 0, 0) };
+        let code = unsafe { peak_lib()?.CAN_Initialize(handle, baud.into(), 0, 0, 0) };
 
         match CanOkError::try_from(code) {
             Ok(CanOkError::Ok) => Ok(UsbCanSocket { handle }),
@@ -62,7 +62,10 @@ impl UsbCanSocket {
 
 impl Drop for UsbCanSocket {
     fn drop(&mut self) {
-        unsafe { peak_can::CAN_Uninitialize(self.handle) };
+        let Ok(peak_lib) = peak_lib() else {
+            return;
+        };
+        unsafe { peak_lib.CAN_Uninitialize(self.handle) };
     }
 }
 

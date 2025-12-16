@@ -4,6 +4,7 @@
 
 use crate::channel::Channel;
 use crate::error::{CanError, CanOkError};
+use crate::peak_lib;
 use crate::peak_can;
 use std::ffi::c_void;
 use std::mem::size_of;
@@ -24,7 +25,7 @@ impl From<ChannelConditionStatus> for u32 {
             ChannelConditionStatus::Unavailable => peak_can::PEAK_CHANNEL_UNAVAILABLE,
             ChannelConditionStatus::Available => peak_can::PEAK_CHANNEL_AVAILABLE,
             ChannelConditionStatus::Occupied => peak_can::PEAK_CHANNEL_OCCUPIED,
-            ChannelConditionStatus::CanView => peak_can::PEAK_CHANNEL_VIEW,
+            ChannelConditionStatus::CanView => peak_can::PEAK_CHANNEL_PEAKVIEW,
         }
     }
 }
@@ -37,7 +38,7 @@ impl TryFrom<u32> for ChannelConditionStatus {
             peak_can::PEAK_CHANNEL_AVAILABLE => Ok(ChannelConditionStatus::Available),
             peak_can::PEAK_CHANNEL_UNAVAILABLE => Ok(ChannelConditionStatus::Unavailable),
             peak_can::PEAK_CHANNEL_OCCUPIED => Ok(ChannelConditionStatus::Occupied),
-            peak_can::PEAK_CHANNEL_VIEW => Ok(ChannelConditionStatus::CanView),
+            peak_can::PEAK_CHANNEL_PEAKVIEW => Ok(ChannelConditionStatus::CanView),
             _ => Err(()),
         }
     }
@@ -55,7 +56,7 @@ impl<T: HasChannelCondition + Channel> ChannelCondition for T {
     fn channel_condition(&self) -> Result<ChannelConditionStatus, CanError> {
         let mut data = [0u8; 4];
         let code = unsafe {
-            peak_can::CAN_GetValue(
+            peak_lib()?.CAN_GetValue(
                 self.channel(),
                 peak_can::PEAK_CHANNEL_CONDITION as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -92,7 +93,7 @@ impl<T: HasChannelIdentifying + Channel> ChannelIdentifying for T {
         };
 
         let code = unsafe {
-            peak_can::CAN_SetValue(
+            peak_lib()?.CAN_SetValue(
                 self.channel(),
                 peak_can::PEAK_CHANNEL_IDENTIFYING as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -110,7 +111,7 @@ impl<T: HasChannelIdentifying + Channel> ChannelIdentifying for T {
     fn is_channel_identifying(&self) -> Result<bool, CanError> {
         let mut data = [0u8; 4];
         let code = unsafe {
-            peak_can::CAN_GetValue(
+            peak_lib()?.CAN_GetValue(
                 self.channel(),
                 peak_can::PEAK_CHANNEL_IDENTIFYING as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -145,7 +146,7 @@ impl<T: HasDeviceId + Channel> DeviceId for T {
     fn device_id(&self) -> Result<u32, CanError> {
         let mut data = [0u8; 4];
         let code = unsafe {
-            peak_can::CAN_GetValue(
+            peak_lib()?.CAN_GetValue(
                 self.channel(),
                 peak_can::PEAK_DEVICE_ID as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -173,7 +174,7 @@ impl<T: HasSetDeviceId + Channel> SetDeviceId for T {
     fn set_device_id(&self, value: Self::Item) -> Result<(), CanError> {
         let mut data = value.to_le_bytes();
         let code = unsafe {
-            peak_can::CAN_SetValue(
+            peak_lib()?.CAN_SetValue(
                 self.channel(),
                 peak_can::PEAK_DEVICE_ID as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -201,7 +202,7 @@ impl<T: HasHardwareName + Channel> HardwareName for T {
     fn hardware_name(&self) -> Result<String, CanError> {
         let mut data = [0u8; peak_can::MAX_LENGTH_HARDWARE_NAME as usize];
         let code = unsafe {
-            peak_can::CAN_GetValue(
+            peak_lib()?.CAN_GetValue(
                 self.channel(),
                 peak_can::PEAK_HARDWARE_NAME as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -235,7 +236,7 @@ impl<T: HasControllerNumber + Channel> ControllerNumber for T {
     fn controller_number(&self) -> Result<u32, CanError> {
         let mut data = [0u8; 4];
         let code = unsafe {
-            peak_can::CAN_GetValue(
+            peak_lib()?.CAN_GetValue(
                 self.channel(),
                 peak_can::PEAK_CONTROLLER_NUMBER as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -263,7 +264,7 @@ impl<T: HasSetControllerNumber + Channel> SetControllerNumber for T {
     fn set_controller_number(&self, value: Self::Item) -> Result<(), CanError> {
         let mut data = value.to_le_bytes();
         let code = unsafe {
-            peak_can::CAN_SetValue(
+            peak_lib()?.CAN_SetValue(
                 self.channel(),
                 peak_can::PEAK_CONTROLLER_NUMBER as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -291,7 +292,7 @@ impl<T: HasIpAddress + Channel> IpAddress for T {
     fn ip_address(&self) -> Result<Ipv4Addr, CanError> {
         let mut data = [0u8; 20];
         let code = unsafe {
-            peak_can::CAN_GetValue(
+            peak_lib()?.CAN_GetValue(
                 self.channel(),
                 peak_can::PEAK_IP_ADDRESS as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -321,7 +322,7 @@ impl<T: HasIpAddress + Channel> IpAddress for T {
 pub fn attached_channels_count() -> Result<u32, CanError> {
     let mut data = [0u8; 4];
     let code = unsafe {
-        peak_can::CAN_GetValue(
+        peak_lib()?.CAN_GetValue(
             peak_can::PEAK_NONEBUS as u16,
             peak_can::PEAK_ATTACHED_CHANNELS_COUNT as u8,
             data.as_mut_ptr() as *mut c_void,
@@ -340,13 +341,13 @@ pub fn attached_channels_count() -> Result<u32, CanError> {
 
 #[derive(Debug)]
 pub struct ChannelInformation {
-    pub channel_information: peak_can::tagCANTPChannelInformation,
+    pub channel_information: peak_can::tagTPEAKChannelInformation,
 }
 
 impl ChannelInformation {
     pub fn new() -> Self {
         ChannelInformation {
-            channel_information: peak_can::tagCANTPChannelInformation {
+            channel_information: peak_can::tagTPEAKChannelInformation {
                 channel_handle: 0,
                 device_type: 0,
                 controller_number: 0,
@@ -384,11 +385,11 @@ pub fn attached_channels() -> Result<Vec<ChannelInformation>, CanError> {
     }
 
     let code = unsafe {
-        peak_can::CAN_GetValue(
+        peak_lib()?.CAN_GetValue(
             peak_can::PEAK_NONEBUS as u16,
             peak_can::PEAK_ATTACHED_CHANNELS as u8,
             channel_information_list.as_mut_ptr() as *mut c_void,
-            attached_channels_count * size_of::<peak_can::tagCANTPChannelInformation>() as u32,
+            attached_channels_count * size_of::<peak_can::tagTPEAKChannelInformation>() as u32,
         )
     };
 
@@ -411,7 +412,7 @@ impl<T: HasDevicePartNumber + Channel> DevicePartNumber for T {
     fn device_part_number(&self) -> Result<String, CanError> {
         let mut data = [0u8; 100];
         let code = unsafe {
-            peak_can::CAN_GetValue(
+            peak_lib()?.CAN_GetValue(
                 self.channel(),
                 peak_can::PEAK_DEVICE_NUMBER as u8,
                 data.as_mut_ptr() as *mut c_void,

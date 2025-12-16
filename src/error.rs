@@ -3,14 +3,17 @@
 //! [CanError] models failure codes only whereas [CanOkError] also models the possibility of
 //! success stated by the [Ok](CanOkError::Ok) variant.
 
-use core::fmt;
 use std::error::Error;
+use std::fmt;
+use std::sync::Arc;
 
 use crate::peak_can;
 
 ///
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum CanError {
+    ///
+    Libloading(Arc<libloading::Error>),
     ///
     XmtFull,
     ///
@@ -66,7 +69,7 @@ pub enum CanError {
 }
 
 /// Type modeling all possible states of an operation as exposed by [PEAK_basic_sys].
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub enum CanOkError {
     /// Models the success of an operation.
     Ok,
@@ -77,6 +80,7 @@ pub enum CanOkError {
 impl From<CanError> for u32 {
     fn from(value: CanError) -> u32 {
         match value {
+            CanError::Libloading(_) => peak_can::PEAK_ERROR_UNKNOWN,
             CanError::XmtFull => peak_can::PEAK_ERROR_XMTFULL,
             CanError::Overrun => peak_can::PEAK_ERROR_OVERRUN,
             CanError::BusLight => peak_can::PEAK_ERROR_BUSLIGHT,
@@ -173,40 +177,43 @@ impl TryFrom<u32> for CanOkError {
     }
 }
 
+impl From<libloading::Error> for CanError {
+    fn from(value: libloading::Error) -> Self {
+        Self::Libloading(Arc::new(value))
+    }
+}
+
 impl fmt::Display for CanError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                CanError::XmtFull => "xmt full",
-                CanError::Overrun => "overrun",
-                CanError::BusLight => "bus light",
-                CanError::BusHeavy => "bus heavy",
-                CanError::BusPassive => "bus passive",
-                CanError::BusOff => "bus off",
-                CanError::AnyBusErr => "any bus error",
-                CanError::QrcvEmpty => "qrcv empty",
-                CanError::QOverrun => "q overrun",
-                CanError::QxmtFull => "qxmt full",
-                CanError::RegTest => "reg test",
-                CanError::NoDriver => "no driver",
-                CanError::HwInUse => "hardware in use",
-                CanError::NetInUse => "network in use",
-                CanError::IllHw => "illegal hardware",
-                CanError::IllNet => "illegal network",
-                CanError::IllClient => "illegal client",
-                CanError::Resource => "resource",
-                CanError::IllParamType => "illegal parameter type",
-                CanError::IllParamVal => "illegal parameter value",
-                CanError::Unknown => "unknown",
-                CanError::IllData => "illegal data",
-                CanError::IllMode => "illegal mode",
-                CanError::Caution => "caution",
-                CanError::Initialize => "initialize",
-                CanError::IllOperation => "illegal operation",
-            }
-        )
+        match self {
+            CanError::Libloading(e) => write!(f, "{e}"),
+            CanError::XmtFull => write!(f, "xmt full"),
+            CanError::Overrun => write!(f, "overrun"),
+            CanError::BusLight => write!(f, "bus light"),
+            CanError::BusHeavy => write!(f, "bus heavy"),
+            CanError::BusPassive => write!(f, "bus passive"),
+            CanError::BusOff => write!(f, "bus off"),
+            CanError::AnyBusErr => write!(f, "any bus error"),
+            CanError::QrcvEmpty => write!(f, "qrcv empty"),
+            CanError::QOverrun => write!(f, "q overrun"),
+            CanError::QxmtFull => write!(f, "qxmt full"),
+            CanError::RegTest => write!(f, "reg test"),
+            CanError::NoDriver => write!(f, "no driver"),
+            CanError::HwInUse => write!(f, "hardware in use"),
+            CanError::NetInUse => write!(f, "network in use"),
+            CanError::IllHw => write!(f, "illegal hardware"),
+            CanError::IllNet => write!(f, "illegal network"),
+            CanError::IllClient => write!(f, "illegal client"),
+            CanError::Resource => write!(f, "resource"),
+            CanError::IllParamType => write!(f, "illegal parameter type"),
+            CanError::IllParamVal => write!(f, "illegal parameter value"),
+            CanError::Unknown => write!(f, "unknown"),
+            CanError::IllData => write!(f, "illegal data"),
+            CanError::IllMode => write!(f, "illegal mode"),
+            CanError::Caution => write!(f, "caution"),
+            CanError::Initialize => write!(f, "initialize"),
+            CanError::IllOperation => write!(f, "illegal operation"),
+        }
     }
 }
 

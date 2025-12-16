@@ -11,6 +11,7 @@ pub mod usb;
 
 use crate::bus::Bus;
 use crate::error::{CanError, CanOkError};
+use crate::peak_lib;
 use crate::peak_can;
 
 use std::ops::Deref;
@@ -32,7 +33,7 @@ pub enum FrameConstructionError {
 
 #[derive(Debug, Copy, Clone)]
 pub struct CanFrame {
-    frame: peak_can::CANTPMsg,
+    frame: peak_can::TPEAKMsg,
 }
 
 impl CanFrame {
@@ -53,7 +54,7 @@ impl CanFrame {
 
             match msg_type {
                 MessageType::Standard => Ok(CanFrame {
-                    frame: peak_can::CANTPMsg {
+                    frame: peak_can::TPEAKMsg {
                         ID: can_id & STANDARD_MASK,
                         MSGTYPE: peak_can::PEAK_MESSAGE_STANDARD as u8,
                         LEN: data.len() as u8,
@@ -61,7 +62,7 @@ impl CanFrame {
                     },
                 }),
                 MessageType::Extended => Ok(CanFrame {
-                    frame: peak_can::CANTPMsg {
+                    frame: peak_can::TPEAKMsg {
                         ID: can_id & EXTENDED_MASK,
                         MSGTYPE: peak_can::PEAK_MESSAGE_EXTENDED as u8,
                         LEN: data.len() as u8,
@@ -133,7 +134,7 @@ impl PartialEq for CanFrame {
 
 #[derive(Debug, Copy, Clone)]
 pub struct CanFdFrame {
-    frame: peak_can::CANTPMsgFD,
+    frame: peak_can::TPEAKMsgFD,
 }
 
 impl CanFdFrame {
@@ -154,7 +155,7 @@ impl CanFdFrame {
 
             match msg_type {
                 MessageType::Standard => Ok(CanFdFrame {
-                    frame: peak_can::CANTPMsgFD {
+                    frame: peak_can::TPEAKMsgFD {
                         ID: can_id & STANDARD_MASK,
                         MSGTYPE: peak_can::PEAK_MESSAGE_STANDARD as u8,
                         DLC: data.len() as u8,
@@ -162,7 +163,7 @@ impl CanFdFrame {
                     },
                 }),
                 MessageType::Extended => Ok(CanFdFrame {
-                    frame: peak_can::CANTPMsgFD {
+                    frame: peak_can::TPEAKMsgFD {
                         ID: can_id & EXTENDED_MASK,
                         MSGTYPE: peak_can::PEAK_MESSAGE_EXTENDED as u8,
                         DLC: data.len() as u8,
@@ -237,12 +238,12 @@ impl PartialEq for CanFdFrame {
 
 #[derive(Debug, Copy, Clone)]
 pub struct Timestamp {
-    timestamp: peak_can::CANTPTimestamp,
+    timestamp: peak_can::TPEAKTimestamp,
 }
 
 impl Deref for Timestamp {
-    type Target = peak_can::CANTPTimestamp;
-    
+    type Target = peak_can::TPEAKTimestamp;
+
     fn deref(&self) -> &Self::Target {
         &self.timestamp
     }
@@ -251,7 +252,7 @@ impl Deref for Timestamp {
 impl Default for Timestamp {
     fn default() -> Timestamp {
         Timestamp {
-            timestamp: peak_can::CANTPTimestamp {
+            timestamp: peak_can::TPEAKTimestamp {
                 micros: 0,
                 millis: 0,
                 millis_overflow: 0,
@@ -286,7 +287,7 @@ pub struct CanSocket {
 impl CanSocket {
     pub fn open<T: Bus>(bus: T, baud: Baudrate) -> Result<CanSocket, CanError> {
         let handle = bus.channel();
-        let code = unsafe { peak_can::CAN_Initialize(handle, baud.into(), 0, 0, 0) };
+        let code = unsafe { peak_lib()?.CAN_Initialize(handle, baud.into(), 0, 0, 0) };
 
         match CanOkError::try_from(code) {
             Ok(CanOkError::Ok) => Ok(CanSocket { handle }),
@@ -376,10 +377,10 @@ impl<T: HasRecvCan + Socket> RecvCan for T {
         let mut timestamp = Timestamp::default();
 
         let error_code = unsafe {
-            peak_can::CAN_Read(
+            peak_lib()?.CAN_Read(
                 self.handle(),
-                &mut frame.frame as *mut peak_can::CANTPMsg,
-                &mut timestamp.timestamp as *mut peak_can::CANTPTimestamp,
+                &mut frame.frame as *mut peak_can::TPEAKMsg,
+                &mut timestamp.timestamp as *mut peak_can::TPEAKTimestamp,
             )
         };
 
@@ -394,10 +395,10 @@ impl<T: HasRecvCan + Socket> RecvCan for T {
         let mut frame = CanFrame::default();
 
         let error_code = unsafe {
-            peak_can::CAN_Read(
+            peak_lib()?.CAN_Read(
                 self.handle(),
-                &mut frame.frame as *mut peak_can::CANTPMsg,
-                0 as *mut peak_can::CANTPTimestamp,
+                &mut frame.frame as *mut peak_can::TPEAKMsg,
+                0 as *mut peak_can::TPEAKTimestamp,
             )
         };
 
@@ -417,9 +418,9 @@ impl<T: HasRecvCanFd + Socket> RecvCanFd for T {
         let mut timestamp = 0u64;
 
         let error_code = unsafe {
-            peak_can::CAN_ReadFD(
+            peak_lib()?.CAN_ReadFD(
                 self.handle(),
-                &mut frame.frame as *mut peak_can::CANTPMsgFD,
+                &mut frame.frame as *mut peak_can::TPEAKMsgFD,
                 &mut timestamp as *mut u64,
             )
         };
@@ -435,9 +436,9 @@ impl<T: HasRecvCanFd + Socket> RecvCanFd for T {
         let mut frame = CanFdFrame::default();
 
         let error_code = unsafe {
-            peak_can::CAN_ReadFD(
+            peak_lib()?.CAN_ReadFD(
                 self.handle(),
-                &mut frame.frame as *mut peak_can::CANTPMsgFD,
+                &mut frame.frame as *mut peak_can::TPEAKMsgFD,
                 0 as *mut u64,
             )
         };
@@ -456,7 +457,7 @@ impl<T: HasSendCan + Socket> SendCan for T {
     fn send(&self, frame: CanFrame) -> Result<(), CanError> {
         let mut frame = frame;
         let error_code = unsafe {
-            peak_can::CAN_Write(self.handle(), &mut frame.frame as *mut peak_can::CANTPMsg)
+            peak_lib()?.CAN_Write(self.handle(), &mut frame.frame as *mut peak_can::TPEAKMsg)
         };
 
         match CanOkError::try_from(error_code) {
@@ -473,7 +474,7 @@ impl<T: HasSendCanFd + Socket> SendCanFd for T {
     fn send_fd(&self, frame: CanFdFrame) -> Result<(), CanError> {
         let mut frame = frame;
         let error_code = unsafe {
-            peak_can::CAN_WriteFD(self.handle(), &mut frame.frame as *mut peak_can::CANTPMsgFD)
+            peak_lib()?.CAN_WriteFD(self.handle(), &mut frame.frame as *mut peak_can::TPEAKMsgFD)
         };
 
         match CanOkError::try_from(error_code) {

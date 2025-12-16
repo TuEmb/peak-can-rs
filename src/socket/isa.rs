@@ -18,8 +18,8 @@ use crate::info::{
     HasBitrateInfo, HasChannelFeatures, HasChannelVersion, HasDataBusSpeed, HasFirmwareVersion,
     HasNominalBusSpeed,
 };
-use crate::peak_can;
-use crate::socket::{Baudrate, HasRecvCan, HasRecvCanFd, HasSendCan, HasSendCanFd, Socket};
+use crate::peak_lib;
+use crate::socket::{Baudrate, HasRecvCan, HasSendCan, Socket};
 use crate::trace::{
     HasSetTraceConfigure, HasSetTraceLocation, HasSetTraceSize, HasSetTraceStatus,
     HasTraceConfigure, HasTraceLocation, HasTraceSize, HasTraceStatus,
@@ -32,7 +32,7 @@ pub struct IsaCanSocket {
 
 impl IsaCanSocket {
     pub fn open(bus: IsaBus, baud: Baudrate) -> Result<IsaCanSocket, CanError> {
-        let code = unsafe { peak_can::CAN_Initialize(bus.into(), baud.into(), 0, 0, 0) };
+        let code = unsafe { peak_lib()?.CAN_Initialize(bus.into(), baud.into(), 0, 0, 0) };
 
         match CanOkError::try_from(code) {
             Ok(CanOkError::Ok) => Ok(IsaCanSocket { handle: bus.into() }),
@@ -46,7 +46,10 @@ impl IsaCanSocket {
 
 impl Drop for IsaCanSocket {
     fn drop(&mut self) {
-        unsafe { peak_can::CAN_Uninitialize(self.handle) };
+        let Ok(peak_lib) = peak_lib() else {
+            return;
+        };
+        unsafe { peak_lib.CAN_Uninitialize(self.handle) };
     }
 }
 

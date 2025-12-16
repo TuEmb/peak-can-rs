@@ -4,6 +4,7 @@
 
 use crate::channel::Channel;
 use crate::error::{CanError, CanOkError};
+use crate::peak_lib;
 use crate::peak_can;
 use std::ffi::c_void;
 
@@ -20,7 +21,7 @@ impl<T: HasMessageFilter + Channel> MessageFilter for T {
     fn is_open_filter(&self) -> Result<bool, CanError> {
         let mut data = [0u8; 4];
         let code = unsafe {
-            peak_can::CAN_GetValue(
+            peak_lib()?.CAN_GetValue(
                 self.channel(),
                 peak_can::PEAK_MESSAGE_FILTER as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -44,7 +45,7 @@ impl<T: HasMessageFilter + Channel> MessageFilter for T {
     fn is_closed_filter(&self) -> Result<bool, CanError> {
         let mut data = [0u8; 4];
         let code = unsafe {
-            peak_can::CAN_GetValue(
+            peak_lib()?.CAN_GetValue(
                 self.channel(),
                 peak_can::PEAK_MESSAGE_FILTER as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -77,7 +78,7 @@ impl<T: HasSetMessageFilter + Channel> SetMessageFilter for T {
     fn set_open_filter(&self) -> Result<(), CanError> {
         let mut data = peak_can::PEAK_FILTER_OPEN.to_le_bytes();
         let code = unsafe {
-            peak_can::CAN_SetValue(
+            peak_lib()?.CAN_SetValue(
                 self.channel(),
                 peak_can::PEAK_MESSAGE_FILTER as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -95,7 +96,7 @@ impl<T: HasSetMessageFilter + Channel> SetMessageFilter for T {
     fn set_closed_filter(&self) -> Result<(), CanError> {
         let mut data = peak_can::PEAK_FILTER_CLOSE.to_le_bytes();
         let code = unsafe {
-            peak_can::CAN_SetValue(
+            peak_lib()?.CAN_SetValue(
                 self.channel(),
                 peak_can::PEAK_MESSAGE_FILTER as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -123,7 +124,7 @@ impl<T: HasReceiveStatus + Channel> ReceiveStatus for T {
     fn is_receiving(&self) -> Result<bool, CanError> {
         let mut data = [0u8; 4];
         let code = unsafe {
-            peak_can::CAN_GetValue(
+            peak_lib()?.CAN_GetValue(
                 self.channel(),
                 peak_can::PEAK_RECEIVE_STATUS as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -161,7 +162,7 @@ impl<T: HasSetReceiveStatus + Channel> SetReceiveStatus for T {
             false => peak_can::PEAK_PARAMETER_OFF.to_le_bytes(),
         };
         let code = unsafe {
-            peak_can::CAN_SetValue(
+            peak_lib()?.CAN_SetValue(
                 self.channel(),
                 peak_can::PEAK_RECEIVE_STATUS as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -189,7 +190,7 @@ impl<T: HasAllowStatusFrames + Channel> AllowStatusFrames for T {
     fn allows_status_frames(&self) -> Result<bool, CanError> {
         let mut data = [0u8; 4];
         let code = unsafe {
-            peak_can::CAN_GetValue(
+            peak_lib()?.CAN_GetValue(
                 self.channel(),
                 peak_can::PEAK_ALLOW_STATUS_FRAMES as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -227,7 +228,7 @@ impl<T: HasSetAllowStatusFrames + Channel> SetAllowStatusFrames for T {
             false => peak_can::PEAK_PARAMETER_OFF.to_le_bytes(),
         };
         let code = unsafe {
-            peak_can::CAN_SetValue(
+            peak_lib()?.CAN_SetValue(
                 self.channel(),
                 peak_can::PEAK_ALLOW_STATUS_FRAMES as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -255,7 +256,7 @@ impl<T: HasAllowRTRFrames + Channel> AllowRTRFrames for T {
     fn allows_rtr_frames(&self) -> Result<bool, CanError> {
         let mut data = [0u8; 4];
         let code = unsafe {
-            peak_can::CAN_GetValue(
+            peak_lib()?.CAN_GetValue(
                 self.channel(),
                 peak_can::PEAK_ALLOW_RTR_FRAMES as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -293,7 +294,7 @@ impl<T: HasSetAllowRTRFrames + Channel> SetAllowRTRFrames for T {
             false => peak_can::PEAK_PARAMETER_OFF.to_le_bytes(),
         };
         let code = unsafe {
-            peak_can::CAN_SetValue(
+            peak_lib()?.CAN_SetValue(
                 self.channel(),
                 peak_can::PEAK_ALLOW_RTR_FRAMES as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -321,7 +322,7 @@ impl<T: HasAllowErrorFrames + Channel> AllowErrorFrames for T {
     fn allows_error_frames(&self) -> Result<bool, CanError> {
         let mut data = [0u8; 4];
         let code = unsafe {
-            peak_can::CAN_GetValue(
+            peak_lib()?.CAN_GetValue(
                 self.channel(),
                 peak_can::PEAK_ALLOW_ERROR_FRAMES as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -359,7 +360,7 @@ impl<T: HasSetAllowErrorFrames + Channel> SetAllowErrorFrames for T {
             false => peak_can::PEAK_PARAMETER_OFF.to_le_bytes(),
         };
         let code = unsafe {
-            peak_can::CAN_SetValue(
+            peak_lib()?.CAN_SetValue(
                 self.channel(),
                 peak_can::PEAK_ALLOW_ERROR_FRAMES as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -387,7 +388,7 @@ impl<T: HasAllowEchoFrames + Channel> AllowEchoFrames for T {
     fn allows_echo_frames(&self) -> Result<bool, CanError> {
         let mut data = [0u8; 4];
         let code = unsafe {
-            peak_can::CAN_GetValue(
+            peak_lib()?.CAN_GetValue(
                 self.channel(),
                 peak_can::PEAK_ALLOW_ERROR_FRAMES as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -425,7 +426,7 @@ impl<T: HasSetAllowEchoFrames + Channel> SetAllowEchoFrames for T {
             false => peak_can::PEAK_PARAMETER_OFF.to_le_bytes(),
         };
         let code = unsafe {
-            peak_can::CAN_SetValue(
+            peak_lib()?.CAN_SetValue(
                 self.channel(),
                 peak_can::PEAK_ALLOW_ERROR_FRAMES as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -453,7 +454,7 @@ impl<T: HasAcceptanceFilter11Bit + Channel> AcceptanceFilter11Bit for T {
     fn acceptance_filter_11bit(&self) -> Result<(u32, u32), CanError> {
         let mut data = [0u8; 8];
         let code = unsafe {
-            peak_can::CAN_GetValue(
+            peak_lib()?.CAN_GetValue(
                 self.channel(),
                 peak_can::PEAK_ACCEPTANCE_FILTER_11BIT as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -501,7 +502,7 @@ impl<T: HasSetAcceptanceFilter11Bit + Channel> SetAcceptanceFilter11Bit for T {
             acceptance_code_data[3],
         ];
         let code = unsafe {
-            peak_can::CAN_SetValue(
+            peak_lib()?.CAN_SetValue(
                 self.channel(),
                 peak_can::PEAK_ACCEPTANCE_FILTER_11BIT as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -529,7 +530,7 @@ impl<T: HasAcceptanceFilter29Bit + Channel> AcceptanceFilter29Bit for T {
     fn acceptance_filter_29bit(&self) -> Result<(u32, u32), CanError> {
         let mut data = [0u8; 8];
         let code = unsafe {
-            peak_can::CAN_GetValue(
+            peak_lib()?.CAN_GetValue(
                 self.channel(),
                 peak_can::PEAK_ACCEPTANCE_FILTER_29BIT as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -580,7 +581,7 @@ impl<T: HasSetAcceptanceFilter29Bit + Channel> SetAcceptanceFilter29Bit for T {
             acceptance_code_data[3],
         ];
         let code = unsafe {
-            peak_can::CAN_SetValue(
+            peak_lib()?.CAN_SetValue(
                 self.channel(),
                 peak_can::PEAK_ACCEPTANCE_FILTER_29BIT as u8,
                 data.as_mut_ptr() as *mut c_void,

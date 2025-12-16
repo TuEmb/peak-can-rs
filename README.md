@@ -38,23 +38,8 @@ cargo run --example receive
 cargo run --example receive
 ```
 
-## Linking PCANBasic.lib
-
-If you get a linking error, ensure `PCANBasic.lib` is in your library path:
-
-1. Download `PCANBasic.lib` from https://www.peak-system.com/Software-Information.77.0.html?&L=1.
-2. Modify `build.rs` in your Rust project:
-
-```rust
-fn main() {
-    println!("cargo:rustc-link-search=native=C:\\Libraries\\PCANBasic");
-    println!("cargo:rustc-link-lib=static=PCANBasic");
-}
-```
-
 ## License
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ## Contributions
 Contributions are welcome! Feel free to open an issue or a pull request.
-

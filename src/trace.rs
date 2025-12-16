@@ -1,5 +1,6 @@
 use crate::channel::Channel;
 use crate::error::{CanError, CanOkError};
+use crate::peak_lib;
 use crate::peak_can;
 use std::ffi::c_void;
 use std::path::{Path, PathBuf};
@@ -16,7 +17,7 @@ impl<T: HasTraceLocation + Channel> TraceLocation for T {
     fn trace_location(&self) -> Result<PathBuf, CanError> {
         let mut data = [0u8; peak_can::MAX_LENGTH_VERSION_STRING as usize];
         let code = unsafe {
-            peak_can::CAN_GetValue(
+            peak_lib()?.CAN_GetValue(
                 self.channel(),
                 peak_can::PEAK_TRACE_LOCATION as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -53,7 +54,7 @@ impl<T: HasSetTraceLocation + Channel> SetTraceLocation for T {
             Some(s) => String::from(s),
         };
         let code = unsafe {
-            peak_can::CAN_SetValue(
+            peak_lib()?.CAN_SetValue(
                 self.channel(),
                 peak_can::PEAK_TRACE_LOCATION as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -85,7 +86,7 @@ impl<T: HasTraceStatus + Channel> TraceStatus for T {
     fn is_tracing(&self) -> Result<bool, CanError> {
         let mut data = [0u8; 4];
         let code = unsafe {
-            peak_can::CAN_GetValue(
+            peak_lib()?.CAN_GetValue(
                 self.channel(),
                 peak_can::PEAK_TRACE_STATUS as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -123,7 +124,7 @@ impl<T: HasSetTraceStatus + Channel> SetTraceStatus for T {
             false => peak_can::PEAK_PARAMETER_OFF.to_le_bytes(),
         };
         let code = unsafe {
-            peak_can::CAN_SetValue(
+            peak_lib()?.CAN_SetValue(
                 self.channel(),
                 peak_can::PEAK_TRACE_STATUS as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -151,7 +152,7 @@ impl<T: HasTraceSize + Channel> TraceSize for T {
     fn trace_size(&self) -> Result<u8, CanError> {
         let mut data = [0u8; 4];
         let code = unsafe {
-            peak_can::CAN_GetValue(
+            peak_lib()?.CAN_GetValue(
                 self.channel(),
                 peak_can::PEAK_TRACE_SIZE as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -177,7 +178,7 @@ impl<T: HasSetTraceSize + Channel> SetTraceSize for T {
     fn set_trace_size(&self, size_mb: u8) -> Result<(), CanError> {
         let mut data = [size_mb];
         let code = unsafe {
-            peak_can::CAN_SetValue(
+            peak_lib()?.CAN_SetValue(
                 self.channel(),
                 peak_can::PEAK_TRACE_SIZE as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -245,7 +246,7 @@ impl<T: HasTraceConfigure + Channel> TraceConfigure for T {
     fn trace_configuration(&self) -> Result<TraceFile, CanError> {
         let mut data = [0u8; 4];
         let code = unsafe {
-            peak_can::CAN_GetValue(
+            peak_lib()?.CAN_GetValue(
                 self.channel(),
                 peak_can::PEAK_TRACE_CONFIGURE as u8,
                 data.as_mut_ptr() as *mut c_void,
@@ -277,7 +278,7 @@ impl<T: HasSetTraceConfigure + Channel> SetTraceConfigure for T {
     fn configure_trace(&self, config: TraceFile) -> Result<(), CanError> {
         let mut data = u32::from(config).to_le_bytes();
         let code = unsafe {
-            peak_can::CAN_SetValue(
+            peak_lib()?.CAN_SetValue(
                 self.channel(),
                 peak_can::PEAK_TRACE_CONFIGURE as u8,
                 data.as_mut_ptr() as *mut c_void,
