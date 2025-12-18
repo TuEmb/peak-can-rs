@@ -374,6 +374,10 @@ impl ChannelInformation {
         let s = string.trim_matches(char::from(0));
         String::from(s)
     }
+
+    pub fn is_fd_capable(&self) -> bool {
+        (self.channel_information.device_features & peak_can::FEATURE_FD_CAPABLE) != 0
+    }
 }
 
 pub fn attached_channels() -> Result<Vec<ChannelInformation>, CanError> {
