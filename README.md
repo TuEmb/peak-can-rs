@@ -43,3 +43,4 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## Contributions
 Contributions are welcome! Feel free to open an issue or a pull request.
+Please read the contribution note first: https://github.com/TuEmb/peak-can-rs/wiki/Coding-Rules-&-Project-Constraints
