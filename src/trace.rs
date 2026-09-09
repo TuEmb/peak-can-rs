@@ -25,16 +25,15 @@ impl<T: HasTraceLocation + Channel> TraceLocation for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => match std::str::from_utf8(&data) {
+        match CanOkError::from(code) {
+            CanOkError::Ok => match std::str::from_utf8(&data) {
                 Ok(s) => {
                     let s = s.trim_matches(char::from(0));
                     Ok(PathBuf::from(s))
                 }
                 Err(_) => Err(CanError::Unknown),
             },
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -62,10 +61,9 @@ impl<T: HasSetTraceLocation + Channel> SetTraceLocation for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -94,8 +92,8 @@ impl<T: HasTraceStatus + Channel> TraceStatus for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => {
+        match CanOkError::from(code) {
+            CanOkError::Ok => {
                 let code = u32::from_le_bytes(data);
                 if code == peak_can::PEAK_PARAMETER_ON {
                     Ok(true)
@@ -105,8 +103,7 @@ impl<T: HasTraceStatus + Channel> TraceStatus for T {
                     Err(CanError::Unknown)
                 }
             }
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -132,10 +129,9 @@ impl<T: HasSetTraceStatus + Channel> SetTraceStatus for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -160,10 +156,9 @@ impl<T: HasTraceSize + Channel> TraceSize for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(data[0]),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(data[0]),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -186,10 +181,9 @@ impl<T: HasSetTraceSize + Channel> SetTraceSize for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -254,16 +248,15 @@ impl<T: HasTraceConfigure + Channel> TraceConfigure for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => {
+        match CanOkError::from(code) {
+            CanOkError::Ok => {
                 let code = u32::from_le_bytes(data);
                 match TraceFile::try_from(code) {
                     Ok(log_config) => Ok(log_config),
                     Err(_) => Err(CanError::Unknown),
                 }
             }
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -286,10 +279,9 @@ impl<T: HasSetTraceConfigure + Channel> SetTraceConfigure for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }

@@ -57,8 +57,8 @@ impl<T: HasDigitalConfiguration + Channel> DigitalConfiguration for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => {
+        match CanOkError::from(code) {
+            CanOkError::Ok => {
                 let mode_word = u32::from_le_bytes(data);
                 let pin_enabled = mode_word & (1 << pin);
 
@@ -68,8 +68,7 @@ impl<T: HasDigitalConfiguration + Channel> DigitalConfiguration for T {
                     Ok(IOConfig::InOut)
                 }
             }
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 
@@ -84,10 +83,9 @@ impl<T: HasDigitalConfiguration + Channel> DigitalConfiguration for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(u32::from_le_bytes(data)),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(u32::from_le_bytes(data)),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -111,10 +109,9 @@ impl<T: HasSetDigitalConfiguration + Channel> SetDigitalConfiguration for T {
             )
         };
 
-        let mode_word = match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => u32::from_le_bytes(data),
-            Ok(CanOkError::Err(err)) => return Err(err),
-            Err(_) => return Err(CanError::Unknown),
+        let mode_word = match CanOkError::from(code) {
+            CanOkError::Ok => u32::from_le_bytes(data),
+            CanOkError::Err(err) => return Err(err),
         };
 
         let mode_word = match mode {
@@ -132,10 +129,9 @@ impl<T: HasSetDigitalConfiguration + Channel> SetDigitalConfiguration for T {
             )
         };
 
-        return match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        return match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         };
     }
 
@@ -150,10 +146,9 @@ impl<T: HasSetDigitalConfiguration + Channel> SetDigitalConfiguration for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -207,8 +202,8 @@ impl<T: HasSetDigitalValue + Channel> DigitalValue for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => {
+        match CanOkError::from(code) {
+            CanOkError::Ok => {
                 let mode_word = u32::from_le_bytes(data);
                 let pin_enabled = mode_word & (1 << pin);
 
@@ -218,8 +213,7 @@ impl<T: HasSetDigitalValue + Channel> DigitalValue for T {
                     Ok(IOValue::High)
                 }
             }
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 
@@ -234,10 +228,9 @@ impl<T: HasSetDigitalValue + Channel> DigitalValue for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(u32::from_le_bytes(data)),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(u32::from_le_bytes(data)),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -261,10 +254,9 @@ impl<T: HasSetDigitalValue + Channel> SetDigitalValue for T {
             )
         };
 
-        let mode_word = match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => u32::from_le_bytes(data),
-            Ok(CanOkError::Err(err)) => return Err(err),
-            Err(_) => return Err(CanError::Unknown),
+        let mode_word = match CanOkError::from(code) {
+            CanOkError::Ok => u32::from_le_bytes(data),
+            CanOkError::Err(err) => return Err(err),
         };
 
         let mode_word = match value {
@@ -282,10 +274,9 @@ impl<T: HasSetDigitalValue + Channel> SetDigitalValue for T {
             )
         };
 
-        return match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        return match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         };
     }
 
@@ -300,10 +291,9 @@ impl<T: HasSetDigitalValue + Channel> SetDigitalValue for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -328,10 +318,9 @@ impl<T: HasSetDigitalSet + Channel> SetDigitalSet for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -356,10 +345,9 @@ impl<T: HasSetDigitalClear + Channel> SetDigitalClear for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -384,10 +372,9 @@ impl<T: HasAnalogValue + Channel> AnalogValue for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(u32::from_le_bytes(data)),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(u32::from_le_bytes(data)),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }

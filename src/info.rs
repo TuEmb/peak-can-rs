@@ -18,16 +18,15 @@ pub fn api_version() -> Result<String, CanError> {
         )
     };
 
-    match CanOkError::try_from(code) {
-        Ok(CanOkError::Ok) => match std::str::from_utf8(&data) {
+    match CanOkError::from(code) {
+        CanOkError::Ok => match std::str::from_utf8(&data) {
             Ok(s) => {
                 let s = s.trim_matches(char::from(0));
                 Ok(String::from(s))
             }
             Err(_) => Err(CanError::Unknown),
         },
-        Ok(CanOkError::Err(err)) => Err(err),
-        Err(_) => Err(CanError::Unknown),
+        CanOkError::Err(err) => Err(err),
     }
 }
 
@@ -58,8 +57,8 @@ impl<T: HasChannelVersion + Channel> ChannelVersion for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => match std::str::from_utf8(&data) {
+        match CanOkError::from(code) {
+            CanOkError::Ok => match std::str::from_utf8(&data) {
                 Ok(s) => {
                     let newlines = s.lines().collect::<Vec<_>>();
 
@@ -80,8 +79,7 @@ impl<T: HasChannelVersion + Channel> ChannelVersion for T {
                 }
                 Err(_) => Err(CanError::Unknown),
             },
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -108,8 +106,8 @@ impl<T: HasChannelFeatures + Channel> ChannelFeatures for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => {
+        match CanOkError::from(code) {
+            CanOkError::Ok => {
                 let value = u32::from_le_bytes(data);
                 if value & peak_can::FEATURE_FD_CAPABLE == peak_can::FEATURE_FD_CAPABLE {
                     Ok(true)
@@ -117,8 +115,7 @@ impl<T: HasChannelFeatures + Channel> ChannelFeatures for T {
                     Ok(false)
                 }
             }
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 
@@ -133,8 +130,8 @@ impl<T: HasChannelFeatures + Channel> ChannelFeatures for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => {
+        match CanOkError::from(code) {
+            CanOkError::Ok => {
                 let value = u32::from_le_bytes(data);
                 if value & peak_can::FEATURE_DELAY_CAPABLE == peak_can::FEATURE_DELAY_CAPABLE {
                     Ok(true)
@@ -142,8 +139,7 @@ impl<T: HasChannelFeatures + Channel> ChannelFeatures for T {
                     Ok(false)
                 }
             }
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 
@@ -158,8 +154,8 @@ impl<T: HasChannelFeatures + Channel> ChannelFeatures for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => {
+        match CanOkError::from(code) {
+            CanOkError::Ok => {
                 let value = u32::from_le_bytes(data);
                 if value & peak_can::FEATURE_IO_CAPABLE == peak_can::FEATURE_IO_CAPABLE {
                     Ok(true)
@@ -167,8 +163,7 @@ impl<T: HasChannelFeatures + Channel> ChannelFeatures for T {
                     Ok(false)
                 }
             }
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -193,14 +188,13 @@ impl<T: HasBitrateInfo + Channel> BitrateInfo for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => {
+        match CanOkError::from(code) {
+            CanOkError::Ok => {
                 let btr0 = u16::from_le_bytes([data[0], data[1]]);
                 let btr1 = u16::from_le_bytes([data[2], data[3]]);
                 Ok((btr0, btr1))
             }
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -225,16 +219,15 @@ impl<T: HasBitrateInfoFd + Channel> BitrateInfoFd for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => match std::str::from_utf8(&data) {
+        match CanOkError::from(code) {
+            CanOkError::Ok => match std::str::from_utf8(&data) {
                 Ok(s) => {
                     let s = s.trim_matches(char::from(0));
                     Ok(String::from(s))
                 }
                 Err(_) => Err(CanError::Unknown),
             },
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -259,10 +252,9 @@ impl<T: HasNominalBusSpeed + Channel> NominalBusSpeed for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(u32::from_le_bytes(data)),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(u32::from_le_bytes(data)),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -287,10 +279,9 @@ impl<T: HasDataBusSpeed + Channel> DataBusSpeed for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(u32::from_le_bytes(data)),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(u32::from_le_bytes(data)),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -308,8 +299,8 @@ pub fn lan_service_is_running() -> Result<bool, CanError> {
         )
     };
 
-    match CanOkError::try_from(code) {
-        Ok(CanOkError::Ok) => {
+    match CanOkError::from(code) {
+        CanOkError::Ok => {
             let code = u32::from_le_bytes(data);
             if code & peak_can::SERVICE_STATUS_RUNNING == peak_can::SERVICE_STATUS_RUNNING {
                 Ok(true)
@@ -317,8 +308,7 @@ pub fn lan_service_is_running() -> Result<bool, CanError> {
                 Ok(false)
             }
         }
-        Ok(CanOkError::Err(err)) => Err(err),
-        Err(_) => Err(CanError::Unknown),
+        CanOkError::Err(err) => Err(err),
     }
 }
 
@@ -333,8 +323,8 @@ pub fn lan_service_is_stopped() -> Result<bool, CanError> {
         )
     };
 
-    match CanOkError::try_from(code) {
-        Ok(CanOkError::Ok) => {
+    match CanOkError::from(code) {
+        CanOkError::Ok => {
             let code = u32::from_le_bytes(data);
             if code & peak_can::SERVICE_STATUS_STOPPED == peak_can::SERVICE_STATUS_STOPPED {
                 Ok(true)
@@ -342,8 +332,7 @@ pub fn lan_service_is_stopped() -> Result<bool, CanError> {
                 Ok(false)
             }
         }
-        Ok(CanOkError::Err(err)) => Err(err),
-        Err(_) => Err(CanError::Unknown),
+        CanOkError::Err(err) => Err(err),
     }
 }
 
@@ -367,16 +356,15 @@ impl<T: HasFirmwareVersion + Channel> FirmwareVersion for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => match std::str::from_utf8(&data) {
+        match CanOkError::from(code) {
+            CanOkError::Ok => match std::str::from_utf8(&data) {
                 Ok(s) => {
                     let s = s.trim_matches(char::from(0));
                     Ok(String::from(s))
                 }
                 Err(_) => Err(CanError::Unknown),
             },
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
