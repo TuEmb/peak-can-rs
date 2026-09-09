@@ -29,16 +29,15 @@ impl<T: HasMessageFilter + Channel> MessageFilter for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => {
+        match CanOkError::from(code) {
+            CanOkError::Ok => {
                 if u32::from_le_bytes(data) == peak_can::PEAK_FILTER_OPEN {
                     Ok(true)
                 } else {
                     Ok(false)
                 }
             }
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 
@@ -53,16 +52,15 @@ impl<T: HasMessageFilter + Channel> MessageFilter for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => {
+        match CanOkError::from(code) {
+            CanOkError::Ok => {
                 if u32::from_le_bytes(data) == peak_can::PEAK_FILTER_CLOSE {
                     Ok(true)
                 } else {
                     Ok(false)
                 }
             }
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -86,10 +84,9 @@ impl<T: HasSetMessageFilter + Channel> SetMessageFilter for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 
@@ -104,10 +101,9 @@ impl<T: HasSetMessageFilter + Channel> SetMessageFilter for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -132,8 +128,8 @@ impl<T: HasReceiveStatus + Channel> ReceiveStatus for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => {
+        match CanOkError::from(code) {
+            CanOkError::Ok => {
                 let code = u32::from_le_bytes(data);
                 if code == peak_can::PEAK_PARAMETER_ON {
                     Ok(true)
@@ -143,8 +139,7 @@ impl<T: HasReceiveStatus + Channel> ReceiveStatus for T {
                     Err(CanError::Unknown)
                 }
             }
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -170,10 +165,9 @@ impl<T: HasSetReceiveStatus + Channel> SetReceiveStatus for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -198,8 +192,8 @@ impl<T: HasAllowStatusFrames + Channel> AllowStatusFrames for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => {
+        match CanOkError::from(code) {
+            CanOkError::Ok => {
                 let code = u32::from_le_bytes(data);
                 if code == peak_can::PEAK_PARAMETER_ON {
                     Ok(true)
@@ -209,8 +203,7 @@ impl<T: HasAllowStatusFrames + Channel> AllowStatusFrames for T {
                     Err(CanError::Unknown)
                 }
             }
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -236,10 +229,9 @@ impl<T: HasSetAllowStatusFrames + Channel> SetAllowStatusFrames for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -264,8 +256,8 @@ impl<T: HasAllowRTRFrames + Channel> AllowRTRFrames for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => {
+        match CanOkError::from(code) {
+            CanOkError::Ok => {
                 let code = u32::from_le_bytes(data);
                 if code == peak_can::PEAK_PARAMETER_ON {
                     Ok(true)
@@ -275,8 +267,7 @@ impl<T: HasAllowRTRFrames + Channel> AllowRTRFrames for T {
                     Err(CanError::Unknown)
                 }
             }
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -302,10 +293,9 @@ impl<T: HasSetAllowRTRFrames + Channel> SetAllowRTRFrames for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -330,8 +320,8 @@ impl<T: HasAllowErrorFrames + Channel> AllowErrorFrames for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => {
+        match CanOkError::from(code) {
+            CanOkError::Ok => {
                 let code = u32::from_le_bytes(data);
                 if code == peak_can::PEAK_PARAMETER_ON {
                     Ok(true)
@@ -341,8 +331,7 @@ impl<T: HasAllowErrorFrames + Channel> AllowErrorFrames for T {
                     Err(CanError::Unknown)
                 }
             }
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -368,10 +357,9 @@ impl<T: HasSetAllowErrorFrames + Channel> SetAllowErrorFrames for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -396,8 +384,8 @@ impl<T: HasAllowEchoFrames + Channel> AllowEchoFrames for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => {
+        match CanOkError::from(code) {
+            CanOkError::Ok => {
                 let code = u32::from_le_bytes(data);
                 if code == peak_can::PEAK_PARAMETER_ON {
                     Ok(true)
@@ -407,8 +395,7 @@ impl<T: HasAllowEchoFrames + Channel> AllowEchoFrames for T {
                     Err(CanError::Unknown)
                 }
             }
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -434,10 +421,9 @@ impl<T: HasSetAllowEchoFrames + Channel> SetAllowEchoFrames for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -462,14 +448,13 @@ impl<T: HasAcceptanceFilter11Bit + Channel> AcceptanceFilter11Bit for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => {
+        match CanOkError::from(code) {
+            CanOkError::Ok => {
                 let acceptance_mask = u32::from_le_bytes([data[0], data[1], data[2], data[3]]);
                 let acceptance_code = u32::from_le_bytes([data[4], data[5], data[6], data[7]]);
                 Ok((acceptance_mask, acceptance_code))
             }
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -510,10 +495,9 @@ impl<T: HasSetAcceptanceFilter11Bit + Channel> SetAcceptanceFilter11Bit for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -538,14 +522,13 @@ impl<T: HasAcceptanceFilter29Bit + Channel> AcceptanceFilter29Bit for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => {
+        match CanOkError::from(code) {
+            CanOkError::Ok => {
                 let acceptance_mask = u32::from_le_bytes([data[0], data[1], data[2], data[3]]);
                 let acceptance_code = u32::from_le_bytes([data[4], data[5], data[6], data[7]]);
                 Ok((acceptance_mask, acceptance_code))
             }
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -589,10 +572,9 @@ impl<T: HasSetAcceptanceFilter29Bit + Channel> SetAcceptanceFilter29Bit for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }

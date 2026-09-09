@@ -37,10 +37,9 @@ impl PciCanSocket {
         let handle = bus.into();
         let code = unsafe { peak_lib()?.CAN_Initialize(handle, baud.into(), 0, 0, 0) };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(PciCanSocket { handle }),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(PciCanSocket { handle }),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }

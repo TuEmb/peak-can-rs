@@ -65,13 +65,12 @@ impl<T: HasChannelCondition + Channel> ChannelCondition for T {
         };
 
         let value: u32 = u32::from_le_bytes(data);
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => match ChannelConditionStatus::try_from(value) {
+        match CanOkError::from(code) {
+            CanOkError::Ok => match ChannelConditionStatus::try_from(value) {
                 Ok(status) => Ok(status),
                 Err(_) => Err(CanError::Unknown),
             },
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -101,10 +100,9 @@ impl<T: HasChannelIdentifying + Channel> ChannelIdentifying for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 
@@ -119,8 +117,8 @@ impl<T: HasChannelIdentifying + Channel> ChannelIdentifying for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => {
+        match CanOkError::from(code) {
+            CanOkError::Ok => {
                 let value = u32::from_le_bytes(data);
                 if value & peak_can::PEAK_PARAMETER_ON == peak_can::PEAK_PARAMETER_ON {
                     Ok(true)
@@ -128,8 +126,7 @@ impl<T: HasChannelIdentifying + Channel> ChannelIdentifying for T {
                     Ok(false)
                 }
             }
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -154,10 +151,9 @@ impl<T: HasDeviceId + Channel> DeviceId for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(u32::from_le_bytes(data)),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(u32::from_le_bytes(data)),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -182,10 +178,9 @@ impl<T: HasSetDeviceId + Channel> SetDeviceId for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -210,16 +205,15 @@ impl<T: HasHardwareName + Channel> HardwareName for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => match std::str::from_utf8(&data) {
+        match CanOkError::from(code) {
+            CanOkError::Ok => match std::str::from_utf8(&data) {
                 Ok(s) => {
                     let s = s.trim_matches(char::from(0));
                     Ok(String::from(s))
                 }
                 Err(_) => Err(CanError::Unknown),
             },
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -244,10 +238,9 @@ impl<T: HasControllerNumber + Channel> ControllerNumber for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(u32::from_le_bytes(data)),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(u32::from_le_bytes(data)),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -272,10 +265,9 @@ impl<T: HasSetControllerNumber + Channel> SetControllerNumber for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -300,8 +292,8 @@ impl<T: HasIpAddress + Channel> IpAddress for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => match std::str::from_utf8(&data) {
+        match CanOkError::from(code) {
+            CanOkError::Ok => match std::str::from_utf8(&data) {
                 Ok(s) => {
                     let s = s.trim_matches(char::from(0));
                     match s.parse() {
@@ -311,8 +303,7 @@ impl<T: HasIpAddress + Channel> IpAddress for T {
                 }
                 Err(_) => Err(CanError::Unknown),
             },
-            Ok(CanOkError::Err(err)) => Err(err),
-            _ => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -330,10 +321,9 @@ pub fn attached_channels_count() -> Result<u32, CanError> {
         )
     };
 
-    match CanOkError::try_from(code) {
-        Ok(CanOkError::Ok) => Ok(u32::from_le_bytes(data)),
-        Ok(CanOkError::Err(err)) => Err(err),
-        Err(_) => Err(CanError::Unknown),
+    match CanOkError::from(code) {
+        CanOkError::Ok => Ok(u32::from_le_bytes(data)),
+        CanOkError::Err(err) => Err(err),
     }
 }
 
@@ -397,10 +387,9 @@ pub fn attached_channels() -> Result<Vec<ChannelInformation>, CanError> {
         )
     };
 
-    match CanOkError::try_from(code) {
-        Ok(CanOkError::Ok) => Ok(channel_information_list),
-        Ok(CanOkError::Err(err)) => Err(err),
-        Err(_) => Err(CanError::Unknown),
+    match CanOkError::from(code) {
+        CanOkError::Ok => Ok(channel_information_list),
+        CanOkError::Err(err) => Err(err),
     }
 }
 
@@ -424,16 +413,15 @@ impl<T: HasDevicePartNumber + Channel> DevicePartNumber for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => match std::str::from_utf8(&data) {
+        match CanOkError::from(code) {
+            CanOkError::Ok => match std::str::from_utf8(&data) {
                 Ok(s) => {
                     let s = s.trim_matches(char::from(0));
                     Ok(String::from(s))
                 }
                 Err(_) => Err(CanError::Unknown),
             },
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }

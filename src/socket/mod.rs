@@ -347,10 +347,9 @@ impl CanSocket {
         let handle = bus.channel();
         let code = unsafe { peak_lib()?.CAN_Initialize(handle, baud.into(), 0, 0, 0) };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(CanSocket { handle }),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(CanSocket { handle }),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -721,10 +720,9 @@ impl<T: HasRecvCan + Socket> RecvCan for T {
             )
         };
 
-        match CanOkError::try_from(error_code) {
-            Ok(CanOkError::Ok) => Ok((frame, timestamp)),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(error_code) {
+            CanOkError::Ok => Ok((frame, timestamp)),
+            CanOkError::Err(err) => Err(err),
         }
     }
 
@@ -739,10 +737,9 @@ impl<T: HasRecvCan + Socket> RecvCan for T {
             )
         };
 
-        match CanOkError::try_from(error_code) {
-            Ok(CanOkError::Ok) => Ok(frame),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(error_code) {
+            CanOkError::Ok => Ok(frame),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -762,10 +759,9 @@ impl<T: HasRecvCanFd + Socket> RecvCanFd for T {
             )
         };
 
-        match CanOkError::try_from(error_code) {
-            Ok(CanOkError::Ok) => Ok((frame, timestamp)),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(error_code) {
+            CanOkError::Ok => Ok((frame, timestamp)),
+            CanOkError::Err(err) => Err(err),
         }
     }
 
@@ -780,10 +776,9 @@ impl<T: HasRecvCanFd + Socket> RecvCanFd for T {
             )
         };
 
-        match CanOkError::try_from(error_code) {
-            Ok(CanOkError::Ok) => Ok(frame),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(error_code) {
+            CanOkError::Ok => Ok(frame),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -797,10 +792,9 @@ impl<T: HasSendCan + Socket> SendCan for T {
             peak_lib()?.CAN_Write(self.handle(), &mut frame.frame as *mut peak_can::TPEAKMsg)
         };
 
-        match CanOkError::try_from(error_code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(error_code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -814,10 +808,9 @@ impl<T: HasSendCanFd + Socket> SendCanFd for T {
             peak_lib()?.CAN_WriteFD(self.handle(), &mut frame.frame as *mut peak_can::TPEAKMsgFD)
         };
 
-        match CanOkError::try_from(error_code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(error_code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
