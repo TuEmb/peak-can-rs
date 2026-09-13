@@ -90,6 +90,59 @@ impl CanFrame {
         self.frame.MSGTYPE & peak_can::PEAK_MESSAGE_ECHO as u8 != 0
     }
 
+    /// Whether this is a remote frame (`PCAN_MESSAGE_RTR`).
+    ///
+    /// A remote frame (CAN 2.0B §3.2.2) requests the data frame with this
+    /// identifier; it carries no data of its own, so [`Self::data`] is not
+    /// meaningful for one. Without this predicate a remote frame is
+    /// indistinguishable from a data frame, since the other accessors answer
+    /// the same way for both.
+    ///
+    /// Remote frames reach the receive queue only once they have been enabled
+    /// with [`allow_rtr_frames`](crate::df::SetAllowRTRFrames::allow_rtr_frames).
+    pub fn is_rtr_frame(&self) -> bool {
+        self.frame.MSGTYPE & peak_can::PEAK_MESSAGE_RTR as u8 != 0
+    }
+
+    /// Whether this is a PCAN status message (`PCAN_MESSAGE_STATUS`).
+    ///
+    /// A status message is not a CAN frame: the driver injects it into the
+    /// receive queue to report the controller's own state. It carries no
+    /// identifier and no CAN payload, so [`Self::can_id`] answers 0 and
+    /// [`Self::data`] is not meaningful -- read [`Self::status_bits`] instead.
+    ///
+    /// Without this predicate a status message is indistinguishable from a data
+    /// frame with identifier 0, which is a value a caller may well be using as a
+    /// sentinel.
+    ///
+    /// Status messages reach the receive queue only once they have been enabled
+    /// with [`allow_status_frames`](crate::df::SetAllowStatusFrames::allow_status_frames).
+    pub fn is_status_frame(&self) -> bool {
+        self.frame.MSGTYPE & peak_can::PEAK_MESSAGE_STATUS as u8 != 0
+    }
+
+    /// The status word carried by a status message, or `None` for any other
+    /// frame.
+    ///
+    /// A status message stores a 32-bit `TPCANStatus` in its first four data
+    /// bytes, most significant byte first. The value is comparable against the
+    /// `PCAN_ERROR_*` constants and can be passed to
+    /// [`CanError::try_from`](crate::error::CanError) to classify it.
+    pub fn status_bits(&self) -> Option<u32> {
+        if !self.is_status_frame() {
+            return None;
+        }
+
+        // DATA is a fixed [u8; 8], so the first four bytes are always readable
+        // regardless of what LEN reports.
+        Some(u32::from_be_bytes([
+            self.frame.DATA[0],
+            self.frame.DATA[1],
+            self.frame.DATA[2],
+            self.frame.DATA[3],
+        ]))
+    }
+
     pub fn can_id(&self) -> u32 {
         if self.is_standard_frame() {
             self.frame.ID & STANDARD_MASK
@@ -945,6 +998,131 @@ mod tests {
         .unwrap();
 
         assert_eq!(can_frame_2.can_id(), extended_id);
+    }
+
+    /* RTR FRAME TESTS */
+
+    /// A frame as `CAN_Read` delivers it: MSGTYPE is set by the driver, not by
+    /// `new()`.
+    fn received_frame(msgtype: u32) -> CanFrame {
+        received_frame_with(0x123, msgtype, [0; 8])
+    }
+
+    /// As above, with an explicit identifier and payload.
+    fn received_frame_with(id: u32, msgtype: u32, data: [u8; 8]) -> CanFrame {
+        CanFrame {
+            frame: peak_can::TPEAKMsg {
+                ID: id,
+                MSGTYPE: msgtype as u8,
+                LEN: 0,
+                DATA: data,
+            },
+        }
+    }
+
+    /// The gap this closes: without the predicate a remote frame answers every
+    /// other accessor exactly like a data frame, so it cannot be told apart.
+    #[test]
+    fn a_remote_frame_is_distinguishable_from_a_data_frame() {
+        let remote = received_frame(peak_can::PEAK_MESSAGE_RTR);
+        let data = received_frame(peak_can::PEAK_MESSAGE_STANDARD);
+
+        assert!(remote.is_rtr_frame());
+        assert!(!data.is_rtr_frame());
+
+        // Everything else about them is identical.
+        assert_eq!(remote.can_id(), data.can_id());
+        assert_eq!(remote.dlc(), data.dlc());
+        assert_eq!(remote.data(), data.data());
+    }
+
+    /// RTR is orthogonal to the frame format (§3.1): an extended remote frame
+    /// is both.
+    #[test]
+    fn rtr_is_independent_of_the_frame_format() {
+        let extended_remote =
+            received_frame(peak_can::PEAK_MESSAGE_RTR | peak_can::PEAK_MESSAGE_EXTENDED);
+
+        assert!(extended_remote.is_rtr_frame());
+        assert!(extended_remote.is_extended_frame());
+        assert!(!extended_remote.is_standard_frame());
+    }
+
+    /// A frame built by `new()` is a data frame; the crate offers no way to
+    /// construct a remote frame for sending.
+    #[test]
+    fn a_constructed_frame_is_not_a_remote_frame() {
+        let frame = CanFrame::new(0x123, MessageType::Standard, &[1, 2, 3]).unwrap();
+        assert!(!frame.is_rtr_frame());
+    }
+
+    /* STATUS MESSAGE TESTS */
+
+    /// A status message reports controller state, not bus traffic. Its
+    /// identifier is 0, which a caller may well be treating as a sentinel, so
+    /// without the predicate it is indistinguishable from a data frame.
+    #[test]
+    fn a_status_message_is_distinguishable_from_an_id_zero_frame() {
+        let status = received_frame_with(0, peak_can::PEAK_MESSAGE_STATUS, [0; 8]);
+        let data = received_frame_with(0, peak_can::PEAK_MESSAGE_STANDARD, [0; 8]);
+
+        assert!(status.is_status_frame());
+        assert!(!data.is_status_frame());
+        assert_eq!(status.can_id(), data.can_id());
+    }
+
+    /// The status word is the first four data bytes, most significant first.
+    #[test]
+    fn status_bits_decode_big_endian() {
+        // PCAN_ERROR_BUSPASSIVE (0x40000).
+        let frame = received_frame_with(
+            0,
+            peak_can::PEAK_MESSAGE_STATUS,
+            [0x00, 0x04, 0x00, 0x00, 0, 0, 0, 0],
+        );
+
+        assert_eq!(frame.status_bits(), Some(peak_can::PEAK_ERROR_BUSPASSIVE));
+    }
+
+    /// The word classifies through `CanError`, so a status message turns into
+    /// the same error type the rest of the crate returns.
+    #[test]
+    fn status_bits_classify_as_a_can_error() {
+        let frame = received_frame_with(
+            0,
+            peak_can::PEAK_MESSAGE_STATUS,
+            [0x00, 0x00, 0x00, 0x10, 0, 0, 0, 0],
+        );
+
+        let bits = frame.status_bits().expect("a status message has a status word");
+        assert!(matches!(CanError::try_from(bits), Ok(CanError::BusOff)));
+    }
+
+    /// Only status messages carry a status word.
+    #[test]
+    fn a_data_frame_has_no_status_bits() {
+        let frame = received_frame_with(
+            0x123,
+            peak_can::PEAK_MESSAGE_STANDARD,
+            [0xDE, 0xAD, 0xBE, 0xEF, 0, 0, 0, 0],
+        );
+
+        assert_eq!(frame.status_bits(), None);
+    }
+
+    /// `LEN` is not trusted: the word is read from the fixed-size DATA array, so
+    /// a driver reporting LEN 0 does not hide the payload.
+    #[test]
+    fn status_bits_ignore_the_reported_length() {
+        let frame = received_frame_with(
+            0,
+            peak_can::PEAK_MESSAGE_STATUS,
+            [0x00, 0x00, 0x00, 0x10, 0, 0, 0, 0],
+        );
+
+        assert_eq!(frame.dlc(), 0, "the helper reports LEN 0");
+        assert_eq!(frame.data(), &[] as &[u8], "so data() is empty");
+        assert_eq!(frame.status_bits(), Some(peak_can::PEAK_ERROR_BUSOFF));
     }
 
     /* calc_dlc TESTS */
