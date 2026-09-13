@@ -28,8 +28,8 @@ impl<T: HasFiveVoltsPower + Channel> FiveVoltsPower for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => {
+        match CanOkError::from(code) {
+            CanOkError::Ok => {
                 let value = u32::from_le_bytes(data);
                 if value & peak_can::PEAK_PARAMETER_ON == peak_can::PEAK_PARAMETER_ON {
                     Ok(true)
@@ -37,8 +37,7 @@ impl<T: HasFiveVoltsPower + Channel> FiveVoltsPower for T {
                     Ok(false)
                 }
             }
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -64,10 +63,9 @@ impl<T: HasSetFiveVoltsPower + Channel> SetFiveVoltsPower for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -92,8 +90,8 @@ impl<T: HasBusOffAutoreset + Channel> BusOffAutoreset for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => {
+        match CanOkError::from(code) {
+            CanOkError::Ok => {
                 let value = u32::from_le_bytes(data);
                 if value & peak_can::PEAK_PARAMETER_ON == peak_can::PEAK_PARAMETER_ON {
                     Ok(true)
@@ -101,8 +99,7 @@ impl<T: HasBusOffAutoreset + Channel> BusOffAutoreset for T {
                     Ok(false)
                 }
             }
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -128,10 +125,9 @@ impl<T: HasSetBusOffAutoreset + Channel> SetBusOffAutoreset for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -156,8 +152,8 @@ impl<T: HasListenOnly + Channel> ListenOnly for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => {
+        match CanOkError::from(code) {
+            CanOkError::Ok => {
                 let value = u32::from_le_bytes(data);
                 if value & peak_can::PEAK_PARAMETER_ON == peak_can::PEAK_PARAMETER_ON {
                     Ok(true)
@@ -165,8 +161,7 @@ impl<T: HasListenOnly + Channel> ListenOnly for T {
                     Ok(false)
                 }
             }
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -192,10 +187,9 @@ impl<T: HasSetListenOnly + Channel> SetListenOnly for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -220,8 +214,8 @@ impl<T: HasBitrateAdapting + Channel> BitrateAdapting for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => {
+        match CanOkError::from(code) {
+            CanOkError::Ok => {
                 let value = u32::from_le_bytes(data);
                 if value & peak_can::PEAK_PARAMETER_ON == peak_can::PEAK_PARAMETER_ON {
                     Ok(true)
@@ -229,8 +223,7 @@ impl<T: HasBitrateAdapting + Channel> BitrateAdapting for T {
                     Ok(false)
                 }
             }
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -256,10 +249,9 @@ impl<T: HasSetBitrateAdapting + Channel> SetBitrateAdapting for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -284,10 +276,9 @@ impl<T: HasInterframeDelay + Channel> InterframeDelay for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(u32::from_le_bytes(data)),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(u32::from_le_bytes(data)),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
@@ -310,10 +301,9 @@ impl<T: HasSetInterframeDelay + Channel> SetInterframeDelay for T {
             )
         };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(()),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(()),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }

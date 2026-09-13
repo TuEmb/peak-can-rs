@@ -66,6 +66,18 @@ pub enum CanError {
     Initialize,
     ///
     IllOperation,
+    /// A status code this crate does not recognise.
+    ///
+    /// PCAN status codes are a bit field, and not every value the driver can
+    /// return has its own constant. `PCAN_ERROR_ANYBUSERR` is one the header
+    /// does define (the union of the bus-error bits); a bus condition reported
+    /// together with an orthogonal one such as `PCAN_ERROR_QOVERRUN` is
+    /// another. Neither equals any single constant.
+    ///
+    /// Such a code is preserved here rather than collapsed into
+    /// [`CanError::Unknown`], which would discard the diagnosis exactly when
+    /// the most is going wrong. Inspect it with [`CanError::code`].
+    Other(u32),
 }
 
 /// Type modeling all possible states of an operation as exposed by [PEAK_basic_sys].
@@ -114,6 +126,7 @@ impl From<CanError> for u32 {
             CanError::Caution => peak_can::PEAK_ERROR_CAUTION,
             CanError::Initialize => peak_can::PEAK_ERROR_INITIALIZE,
             CanError::IllOperation => peak_can::PEAK_ERROR_ILLOPERATION,
+            CanError::Other(code) => code,
         }
     }
 }
@@ -158,24 +171,43 @@ impl TryFrom<u32> for CanError {
             peak_can::PEAK_ERROR_CAUTION => Ok(CanError::Caution),
             peak_can::PEAK_ERROR_INITIALIZE => Ok(CanError::Initialize),
             peak_can::PEAK_ERROR_ILLOPERATION => Ok(CanError::IllOperation),
-            _ => Err(()),
+            // Not every value the driver returns has its own constant -- a bit
+            // field can carry a combination, and PCAN_ERROR_ANYBUSERR is itself
+            // a union. Keep the code rather than reporting `Unknown` and losing
+            // what actually happened.
+            peak_can::PEAK_ERROR_OK => Err(()),
+            code => Ok(CanError::Other(code)),
         }
     }
 }
 
-impl TryFrom<u32> for CanOkError {
-    type Error = ();
+impl CanError {
+    /// The raw PCAN status code behind this error.
+    ///
+    /// Every variant maps back to the value the driver returned, so a caller
+    /// can compare against a `PCAN_ERROR_*` constant directly -- including for
+    /// [`CanError::Other`], where that is the only way to inspect it.
+    ///
+    /// [`CanError::Libloading`] reports `PCAN_ERROR_UNKNOWN`: the library never
+    /// loaded, so no driver code was ever produced.
+    pub fn code(&self) -> u32 {
+        u32::from(self.clone())
+    }
+}
 
-    fn try_from(value: u32) -> Result<Self, Self::Error> {
-        match value {
-            peak_can::PEAK_ERROR_OK => Ok(CanOkError::Ok),
-            _ => {
-                let err = CanError::try_from(value)?;
-                Ok(CanOkError::Err(err))
-            }
+impl From<u32> for CanOkError {
+    /// Decode a driver return code.
+    ///
+    /// Cannot fail: `PCAN_ERROR_OK` is [`CanOkError::Ok`] and every other value
+    /// is an error, unrecognised codes included (see [`CanError::Other`]).
+    fn from(value: u32) -> Self {
+        match CanError::try_from(value) {
+            Ok(err) => CanOkError::Err(err),
+            Err(()) => CanOkError::Ok,
         }
     }
 }
+
 
 impl From<libloading::Error> for CanError {
     fn from(value: libloading::Error) -> Self {
@@ -213,8 +245,90 @@ impl fmt::Display for CanError {
             CanError::Caution => write!(f, "caution"),
             CanError::Initialize => write!(f, "initialize"),
             CanError::IllOperation => write!(f, "illegal operation"),
+            CanError::Other(code) => write!(f, "status {code:#x}"),
         }
     }
 }
 
 impl Error for CanError {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Every code with its own constant still decodes to its own variant.
+    #[test]
+    fn known_codes_keep_their_variant() {
+        for (code, expected) in [
+            (peak_can::PEAK_ERROR_BUSLIGHT, CanError::BusLight),
+            (peak_can::PEAK_ERROR_BUSPASSIVE, CanError::BusPassive),
+            (peak_can::PEAK_ERROR_BUSOFF, CanError::BusOff),
+            (peak_can::PEAK_ERROR_QRCVEMPTY, CanError::QrcvEmpty),
+            (peak_can::PEAK_ERROR_NODRIVER, CanError::NoDriver),
+        ] {
+            let decoded = CanError::try_from(code).expect("a non-zero code is an error");
+            assert_eq!(
+                decoded.code(),
+                expected.code(),
+                "code {code:#x} must keep its dedicated variant"
+            );
+        }
+    }
+
+    /// The bug this fixes: a code without its own constant used to fall through
+    /// to `Err(())`, which callers turned into `Unknown` -- losing what the
+    /// driver actually reported.
+    #[test]
+    fn an_unrecognised_code_keeps_its_value() {
+        let code = peak_can::PEAK_ERROR_BUSPASSIVE | peak_can::PEAK_ERROR_QOVERRUN;
+        let err = CanError::try_from(code).expect("still an error");
+
+        assert!(matches!(err, CanError::Other(bits) if bits == code));
+        assert_eq!(err.code(), code, "the round trip back to u32 is lossless");
+    }
+
+    /// `PCAN_ERROR_ANYBUSERR` is a constant the header defines, yet it equals
+    /// none of the individual conditions -- it is the union of them. It used to
+    /// decode to `AnyBusErr` only because that variant existed; any *other*
+    /// union did not.
+    #[test]
+    fn any_bus_err_still_decodes_to_its_variant() {
+        let err = CanError::try_from(peak_can::PEAK_ERROR_ANYBUSERR).unwrap();
+        assert!(matches!(err, CanError::AnyBusErr));
+    }
+
+    /// Success is not an error.
+    #[test]
+    fn ok_is_not_an_error() {
+        assert!(CanError::try_from(peak_can::PEAK_ERROR_OK).is_err());
+        assert!(matches!(
+            CanOkError::from(peak_can::PEAK_ERROR_OK),
+            CanOkError::Ok
+        ));
+    }
+
+    /// Decoding is now total, so an unrecognised code reaches the caller as an
+    /// error rather than failing to convert.
+    #[test]
+    fn can_ok_error_decodes_every_code() {
+        let code = peak_can::PEAK_ERROR_BUSOFF | peak_can::PEAK_ERROR_QOVERRUN;
+        match CanOkError::from(code) {
+            CanOkError::Err(err) => assert_eq!(err.code(), code),
+            CanOkError::Ok => panic!("a non-zero code is not success"),
+        }
+    }
+
+    /// `code()` answers for every variant, so a caller can always compare
+    /// against a PCAN_ERROR_* constant.
+    #[test]
+    fn code_round_trips_for_known_variants() {
+        assert_eq!(CanError::BusOff.code(), peak_can::PEAK_ERROR_BUSOFF);
+        assert_eq!(CanError::QrcvEmpty.code(), peak_can::PEAK_ERROR_QRCVEMPTY);
+        assert_eq!(CanError::Other(0x1234).code(), 0x1234);
+    }
+
+    #[test]
+    fn unrecognised_code_displays_its_value() {
+        assert_eq!(CanError::Other(0x50).to_string(), "status 0x50");
+    }
+}

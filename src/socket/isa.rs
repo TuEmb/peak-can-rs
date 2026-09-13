@@ -34,10 +34,9 @@ impl IsaCanSocket {
     pub fn open(bus: IsaBus, baud: Baudrate) -> Result<IsaCanSocket, CanError> {
         let code = unsafe { peak_lib()?.CAN_Initialize(bus.into(), baud.into(), 0, 0, 0) };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(IsaCanSocket { handle: bus.into() }),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(IsaCanSocket { handle: bus.into() }),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }

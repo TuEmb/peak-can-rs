@@ -94,10 +94,9 @@ impl UsbCanSocket {
         let handle = bus.into();
         let code = unsafe { peak_lib()?.CAN_Initialize(handle, baud.into(), 0, 0, 0) };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(UsbCanSocket { handle }),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(UsbCanSocket { handle }),
+            CanOkError::Err(err) => Err(err),
         }
     }
 
@@ -125,10 +124,9 @@ impl UsbCanSocket {
         let btr0btr1 = calculate_btr0btr1(timing);
         let code = unsafe { peak_lib()?.CAN_Initialize(handle, btr0btr1, 0, 0, 0) };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(UsbCanSocket { handle }),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(UsbCanSocket { handle }),
+            CanOkError::Err(err) => Err(err),
         }
     }
 
@@ -157,10 +155,9 @@ impl UsbCanSocket {
 
         let code = unsafe { peak_lib()?.CAN_InitializeFD(handle, timing_bytes.as_mut_ptr().cast()) };
 
-        match CanOkError::try_from(code) {
-            Ok(CanOkError::Ok) => Ok(UsbCanSocket { handle }),
-            Ok(CanOkError::Err(err)) => Err(err),
-            Err(_) => Err(CanError::Unknown),
+        match CanOkError::from(code) {
+            CanOkError::Ok => Ok(UsbCanSocket { handle }),
+            CanOkError::Err(err) => Err(err),
         }
     }
 }
