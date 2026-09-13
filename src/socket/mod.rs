@@ -189,17 +189,14 @@ impl CanFdFrame {
     }
 
     pub fn is_standard_frame(&self) -> bool {
-        self.frame.MSGTYPE & peak_can::PEAK_MESSAGE_STANDARD as u8 != 0
+        // PEAK_MESSAGE_STANDARD flag is denoted as 0, so check for extended frame flag instead
+        !self.is_extended_frame()
     }
 
     pub fn is_extended_frame(&self) -> bool {
-        if self.frame.MSGTYPE & peak_can::PEAK_MESSAGE_EXTENDED as u8 != 0 {
-            true
-        } else {
-            false
-        }
+        self.frame.MSGTYPE & peak_can::PEAK_MESSAGE_EXTENDED as u8 != 0
     }
-    
+
     pub fn is_error_frame(&self) -> bool {
         self.frame.MSGTYPE & peak_can::PEAK_MESSAGE_ERRFRAME as u8 != 0
     }
